@@ -3,179 +3,80 @@
 <head>
 <meta charset="utf-8">
 <title>Courier POD Terminal</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-
 <style>
-body {
-    background: black;
-    color: #00ff00;
-    font-family: monospace;
-    font-weight: bold;
-    margin:0;
-    padding:10px;
-}
-
-#terminal {
-    white-space: pre-wrap;
-    line-height: 1.2em;
-    min-height: 300px;
-}
-
-input.cmd {
-    background: black;
-    color: #00ff00;
-    border: none;
-    font-family: monospace;
-    font-weight: bold;
-    outline: none;
-    width: 100%;
-}
+body{background:black;color:#00ff00;font-family:monospace;font-weight:bold;padding:5px;margin:0}
+#out{white-space:pre;line-height:1.2em;font-size:12px}
+input.cmd{background:black;color:#00ff00;border:none;width:100%;font-family:monospace;font-weight:bold;font-size:12px;outline:none}
 </style>
 </head>
 <body>
 
-<div id="terminal">
-Courier POD Terminal v1.0  
-Type "HELP" for commands.  
-&gt; 
+<div id="out">
+Courier POD Terminal v1.0
+Type HELP for commands.
+&gt;
 </div>
-<input class="cmd" id="cmdInput" autofocus>
+
+<form id="cmdForm" onsubmit="return runCmd();">
+<input type="text" id="cmdInput" class="cmd" autocomplete="off">
+</form>
 
 <script>
-var API_URL = "https://script.google.com/macros/s/AKfycbyuNEpOksgP5xs_wdTBBv3MLPle_dFltxLhYI3F1ieVl97oQLZ-b7ZrGYklCh1FYKLnNA/exec"; // replace with your Apps Script webapp URL
-var terminal = document.getElementById("terminal");
-var input = document.getElementById("cmdInput");
+var terminal = document.getElementById('out');
+var input = document.getElementById('cmdInput');
 
-var session = {
-    loggedIn: false,
-    userid: "",
-    passid: ""
-};
+var API = "https://script.google.com/macros/s/AKfycbyuNEpOksgP5xs_wdTBBv3MLPle_dFltxLhYI3F1ieVl97oQLZ-b7ZrGYklCh1FYKLnNA/exec"; // MUST be HTTP for Android 2.3.3
+var session = {loggedIn:false, userid:"", passid:""};
 
-// Command history
-var history = [];
-var historyIndex = 0;
+function println(txt){ terminal.innerHTML += txt + "\n&gt;"; window.scrollTo(0,document.body.scrollHeight); }
 
-// Print line to terminal
-function printLine(text) {
-    terminal.innerText += text + "\n> ";
-    terminal.scrollTop = terminal.scrollHeight;
-}
+function runCmd() {
+    var cmd = input.value;
+    println(cmd);
+    input.value="";
 
-// Send POD or other requests to server
-function sendToServer(params, callback) {
-    var xhr = new XMLHttpRequest();
-    xhr.open("POST", API_URL, true);
-    xhr.setRequestHeader("Content-Type","application/x-www-form-urlencoded");
-    xhr.onreadystatechange = function() {
-        if(xhr.readyState==4) {
-            callback(xhr.responseText);
-        }
-    };
-    xhr.send(params);
-}
-
-// Handle commands
-function handleCommand(cmd) {
-    cmd = cmd.trim();
-    if(cmd=="") return;
-
-    var args = cmd.split(" ");
-    var base = args[0].toUpperCase();
+    var parts = cmd.split(" ");
+    var base = parts[0].toUpperCase();
 
     if(!session.loggedIn) {
-        if(base=="LOGIN") {
-            if(args.length<3) {
-                printLine("Usage: LOGIN <UserID> <PassID>");
-                return;
-            }
-            session.userid = args[1];
-            session.passid = args[2];
+        if(base=="LOGIN"){
+            if(parts.length<3){ println("Usage: LOGIN <UserID> <PassID>"); return false; }
+            session.userid = parts[1];
+            session.passid = parts[2];
             session.loggedIn = true;
-            printLine("Logged in as " + session.userid);
+            println("Logged in as "+session.userid);
         } else if(base=="HELP") {
-            printLine("Commands:\nLOGIN <UserID> <PassID>\nHELP");
+            println("Commands:\nLOGIN <UserID> <PassID>\nHELP");
         } else {
-            printLine("Please LOGIN first.");
+            println("Please LOGIN first.");
         }
     } else {
-        // Logged in commands
-        if(base=="POD") {
-            // Format: POD FROM TO SERVICE STATUS NOTE [SIGNATURE]
-            if(args.length<6) {
-                printLine("Usage: POD <FROM> <TO> <SERVICE> <STATUS> <NOTE> [SIGNATURE]");
-                return;
-            }
-            var from = args[1];
-            var to = args[2];
-            var service = args[3].toUpperCase();
-            var status = args[4].toUpperCase();
-            var note = args[5];
-            var signature = args[6] || "";
+        if(base=="POD"){
+            if(parts.length<6){ println("Usage: POD <FROM> <TO> <SERVICE> <STATUS> <NOTE> [SIGNATURE]"); return false; }
+            var from=parts[1], to=parts[2], svc=parts[3].toUpperCase(), status=parts[4].toUpperCase(), note=parts[5], sig=parts[6]||"";
 
-            if(status=="DL" && service=="EXPRESS" && signature=="") {
-                printLine("Signature required for EXPRESS delivery");
-                return;
-            }
+            if(status=="DL" && svc=="EXPRESS" && sig==""){ println("Signature required"); return false; }
 
-            var postData = "userid=" + encodeURIComponent(session.userid) +
-                           "&passid=" + encodeURIComponent(session.passid) +
-                           "&from=" + encodeURIComponent(from) +
-                           "&to=" + encodeURIComponent(to) +
-                           "&service=" + encodeURIComponent(service) +
-                           "&status=" + encodeURIComponent(status) +
-                           "&note=" + encodeURIComponent(note) +
-                           "&signature=" + encodeURIComponent(signature);
+            var xhr = new XMLHttpRequest();
+            xhr.open("POST",API,true);
+            xhr.setRequestHeader("Content-Type","application/x-www-form-urlencoded");
+            xhr.onreadystatechange=function(){ if(xhr.readyState==4){ println(xhr.responseText); } };
+            var data="userid="+session.userid+"&passid="+session.passid+"&from="+from+"&to="+to+"&service="+svc+"&status="+status+"&note="+note+"&signature="+sig;
+            xhr.send(data);
 
-            sendToServer(postData, function(resp){
-                printLine(resp);
-            });
-
-        } else if(base=="TRACK") {
-            if(args.length<2) {
-                printLine("Usage: TRACK <TRK>");
-                return;
-            }
-            var trk = args[1];
-            sendToServer("trk=" + encodeURIComponent(trk), function(resp){
-                printLine(resp);
-            });
-        } else if(base=="HELP") {
-            printLine("Commands:\nPOD <FROM> <TO> <SERVICE> <STATUS> <NOTE> [SIGNATURE]\nTRACK <TRK>\nLOGOUT\nHELP");
-        } else if(base=="LOGOUT") {
-            session.loggedIn = false;
-            session.userid = "";
-            session.passid = "";
-            printLine("Logged out");
-        } else {
-            printLine("Unknown command: " + base);
-        }
+        } else if(base=="TRACK"){
+            if(parts.length<2){ println("Usage: TRACK <TRK>"); return false; }
+            var trk=parts[1];
+            var xhr = new XMLHttpRequest();
+            xhr.open("GET",API+"?trk="+trk,true);
+            xhr.onreadystatechange=function(){ if(xhr.readyState==4){ println(xhr.responseText); } };
+            xhr.send(null);
+        } else if(base=="LOGOUT"){ session.loggedIn=false; println("Logged out"); }
+        else if(base=="HELP"){ println("Commands:\nPOD <FROM> <TO> <SERVICE> <STATUS> <NOTE> [SIGNATURE]\nTRACK <TRK>\nLOGOUT\nHELP"); }
+        else { println("Unknown command: "+base); }
     }
+    return false;
 }
-
-input.addEventListener("keydown", function(e){
-    if(e.key=="Enter") {
-        var cmd = input.value;
-        printLine(cmd);
-        handleCommand(cmd);
-        history.push(cmd);
-        historyIndex = history.length;
-        input.value = "";
-        e.preventDefault();
-    } else if(e.key=="ArrowUp") {
-        if(historyIndex>0) {
-            historyIndex--;
-            input.value = history[historyIndex];
-        }
-    } else if(e.key=="ArrowDown") {
-        if(historyIndex<history.length-1) {
-            historyIndex++;
-            input.value = history[historyIndex];
-        } else {
-            input.value = "";
-        }
-    }
-});
 </script>
 
 </body>
