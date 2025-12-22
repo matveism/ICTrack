@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Courier POD</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+
+<style>
+body {
+    background-color: #c0c0c0;
+    font-family: monospace;
+    font-weight: bold;
+    margin: 0;
+    padding: 0;
+}
+
+/* DEVICE SAFE CONTAINER */
+.container {
+    width: 240px;
+    margin: 0 auto;
+    border: 2px solid #000;
+    background-color: #e0e0e0;
+}
+
+/* TITLE BAR */
+.titlebar {
+    background-color: #000080;
+    color: #ffffff;
+    padding: 5px;
+    font-size: 12px;
+}
+
+/* CONTENT */
+.content {
+    padding: 6px;
+}
+
+/* LABEL */
+.label {
+    font-size: 11px;
+    color: #003300;
+    margin-top: 4px;
+}
+
+/* INPUTS */
+input, select, textarea, button {
+    width: 100%;
+    box-sizing: border-box;
+    font-family: monospace;
+    font-weight: bold;
+    font-size: 12px;
+    background-color: #ffffff;
+    color: #003300;
+    border: 2px solid #000;
+    padding: 3px;
+    margin-top: 2px;
+}
+
+/* BUTTON */
+button {
+    background-color: #d4d0c8;
+    margin-top: 6px;
+}
+
+/* OUTPUT */
+.output {
+    background-color: #000000;
+    color: #00ff00;
+    padding: 4px;
+    margin-top: 6px;
+    white-space: pre;
+    border: 2px inset #808080;
+    font-size: 11px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<div class="titlebar">Courier POD</div>
+
+<div class="content">
+
+<!-- LOGIN -->
+<div id="login">
+    <div class="label">UserID</div>
+    <input id="userid">
+
+    <div class="label">PassID</div>
+    <input type="password" id="passid">
+
+    <button onclick="login()">LOGIN</button>
+</div>
+
+<!-- MAIN -->
+<div id="main" style="display:none;">
+
+    <div class="label">FROM</div>
+    <input id="from">
+
+    <div class="label">TO</div>
+    <input id="to">
+
+    <div class="label">SERVICE</div>
+    <select id="service">
+        <option value="STANDARD">STANDARD</option>
+        <option value="EXPRESS">EXPRESS</option>
+    </select>
+
+    <div class="label">TRK (4 DIGIT)</div>
+    <input id="trk" maxlength="4">
+
+    <div class="label">STATUS</div>
+    <select id="status">
+        <option value="A">A</option>
+        <option value="T">T</option>
+        <option value="O">O</option>
+        <option value="DL">DL</option>
+    </select>
+
+    <div class="label">SIGNATURE (EXPRESS+DL)</div>
+    <input id="sig">
+
+    <div class="label">NOTE</div>
+    <textarea id="note" rows="2"></textarea>
+
+    <button onclick="sendPOD()">SEND</button>
+
+    <div class="output" id="out"></div>
+
+</div>
+
+</div>
+
+<script>
+var API_URL = "https://script.google.com/macros/s/AKfycbyuNEpOksgP5xs_wdTBBv3MLPle_dFltxLhYI3F1ieVl97oQLZ-b7ZrGYklCh1FYKLnNA/exec";
+
+function login() {
+    if (userid.value == "" || passid.value == "") {
+        alert("Missing credentials");
+        return;
+    }
+    login.style.display = "none";
+    main.style.display = "block";
+}
+
+function sendPOD() {
+    if (status.value == "DL" && service.value == "EXPRESS" && sig.value == "") {
+        alert("Signature required");
+        return;
+    }
+
+    if (trk.value == "" && (from.value == "" || to.value == "")) {
+        alert("Enter TRK or FROM + TO");
+        return;
+    }
+
+    var xhr = new XMLHttpRequest();
+    xhr.open("POST", API_URL, true);
+    xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+
+    xhr.onreadystatechange = function () {
+        if (xhr.readyState == 4) {
+            out.innerHTML = xhr.responseText;
+        }
+    };
+
+    xhr.send(
+        "userid=" + e(userid.value) +
+        "&passid=" + e(passid.value) +
+        "&from=" + e(from.value) +
+        "&to=" + e(to.value) +
+        "&service=" + e(service.value) +
+        "&trk=" + e(trk.value) +
+        "&status=" + e(status.value) +
+        "&note=" + e(note.value) +
+        "&signature=" + e(sig.value)
+    );
+}
+
+function e(v) { return encodeURIComponent(v); }
+</script>
+
+</body>
+</html>
