@@ -24,86 +24,105 @@ var terminal=document.getElementById('terminal');
 var input=document.getElementById('cmdInput');
 
 var API="https://script.google.com/macros/s/AKfycbyuNEpOksgP5xs_wdTBBv3MLPle_dFltxLhYI3F1ieVl97oQLZ-b7ZrGYklCh1FYKLnNA/exec";
-var session={loggedIn:false,userid:"",trk:"",service:"STANDARD"};
+var session={stage:"login", userid:"", passid:"", trk:"", status:"", note:"", signature:""};
 
-// helper to print and auto-scroll
-function println(txt){ 
-    terminal.innerHTML+=txt+"\n&gt;"; 
-    window.scrollTo(0,document.body.scrollHeight); 
-    input.focus(); // always focus after printing
+function println(txt){
+    terminal.innerHTML+=txt+"\n&gt;";
+    window.scrollTo(0,document.body.scrollHeight);
+    input.focus();
 }
 
-// handle Enter
+// force focus on load
+window.onload=function(){ input.focus(); }
+
+// handle Enter key
 input.onkeydown=function(e){
-    if(!e) e=window.event;
-    var key = e.key || e.keyCode || 0;
-    if(key===13 || key===10){
-        var val=input.value;
+    e = e || window.event;
+    if(e.keyCode==13){
+        processInput(input.value);
         input.value="";
-        processInput(val);
         return false;
     }
-}
+};
 
 function processInput(val){
     val=val.trim();
     if(val=="") return;
 
-    if(!session.loggedIn){
-        session.userid=val;
-        println("UserID entered. Now enter PassID:");
-        session.loggedIn="pass"; // waiting for password
-        return;
-    }
+    switch(session.stage){
+        case "login":
+            session.userid=val;
+            println("UserID entered. Now enter PassID:");
+            session.stage="pass";
+            break;
 
-    if(session.loggedIn=="pass"){
-        session.passid=val;
-        session.loggedIn=true;
-        println("Logged in as "+session.userid);
-        println("Enter Tracking ID:");
-        return;
-    }
+        case "pass":
+            session.passid=val;
+            println("Logged in as "+session.userid);
+            println("Enter Tracking ID:");
+            session.stage="trk";
+            break;
 
-    if(!session.trk){
-        session.trk=val;
-        println("TRK: "+session.trk);
-        println("Select Status: A=Accepted, T=In Transit, O=Out for Delivery, DL=Delivered");
-        return;
-    }
+        case "trk":
+            session.trk=val;
+            println("TRK: "+session.trk);
+            println("Select Status: A=Accepted, T=In Transit, O=Out for Delivery, DL=Delivered");
+            session.stage="status";
+            break;
 
-    if(["A","T","O","DL"].indexOf(val.toUpperCase())>=0){
-        var status=val.toUpperCase();
-        var note=prompt("Enter Note (optional)","");
-        var signature="";
-        if(status=="DL"){
-            signature=prompt("Enter Signature if EXPRESS","");
-        }
-
-        // send to server
-        var xhr=new XMLHttpRequest();
-        xhr.open("POST",API,true);
-        xhr.setRequestHeader("Content-Type","application/x-www-form-urlencoded");
-        xhr.onreadystatechange=function(){
-            if(xhr.readyState==4){
-                println(xhr.responseText+"\nEnter next TRK:");
-                session.trk="";
+        case "status":
+            var s=val.toUpperCase();
+            if(["A","T","O","DL"].indexOf(s)<0){
+                println("Invalid status. Enter A, T, O, or DL:");
+                break;
             }
-        };
-        var data="userid="+encodeURIComponent(session.userid)+
-                 "&passid="+encodeURIComponent(session.passid)+
-                 "&trk="+encodeURIComponent(session.trk)+
-                 "&status="+encodeURIComponent(status)+
-                 "&note="+encodeURIComponent(note)+
-                 "&signature="+encodeURIComponent(signature);
-        xhr.send(data);
-        return;
-    }
+            session.status=s;
 
-    println("Invalid input. Enter status: A,T,O,DL");
+            // ask note inline
+            println("Enter note (or leave blank) and press Enter:");
+            session.stage="note";
+            break;
+
+        case "note":
+            session.note=val;
+            if(session.status=="DL"){
+                println("Enter signature for EXPRESS (or leave blank) and press Enter:");
+                session.stage="signature";
+            } else {
+                sendPOD();
+            }
+            break;
+
+        case "signature":
+            session.signature=val;
+            sendPOD();
+            break;
+    }
 }
 
-// force focus on page load
-window.onload=function(){ input.focus(); }
+function sendPOD(){
+    var xhr=new XMLHttpRequest();
+    xhr.open("POST",API,true);
+    xhr.setRequestHeader("Content-Type","application/x-www-form-urlencoded");
+    xhr.onreadystatechange=function(){
+        if(xhr.readyState==4){
+            println("Server Response: "+xhr.responseText);
+            println("Enter next Tracking ID:");
+            session.stage="trk";
+            session.trk="";
+            session.status="";
+            session.note="";
+            session.signature="";
+        }
+    };
+    var data="userid="+encodeURIComponent(session.userid)+
+             "&passid="+encodeURIComponent(session.passid)+
+             "&trk="+encodeURIComponent(session.trk)+
+             "&status="+encodeURIComponent(session.status)+
+             "&note="+encodeURIComponent(session.note)+
+             "&signature="+encodeURIComponent(session.signature);
+    xhr.send(data);
+}
 </script>
 
 </body>
