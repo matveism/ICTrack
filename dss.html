@@ -14,7 +14,6 @@ body {
     padding: 0;
 }
 
-/* DEVICE SAFE CONTAINER */
 .container {
     width: 240px;
     margin: 0 auto;
@@ -22,7 +21,6 @@ body {
     background-color: #e0e0e0;
 }
 
-/* TITLE BAR */
 .titlebar {
     background-color: #000080;
     color: #ffffff;
@@ -30,19 +28,16 @@ body {
     font-size: 12px;
 }
 
-/* CONTENT */
 .content {
     padding: 6px;
 }
 
-/* LABEL */
 .label {
     font-size: 11px;
     color: #003300;
     margin-top: 4px;
 }
 
-/* INPUTS */
 input, select, textarea, button {
     width: 100%;
     box-sizing: border-box;
@@ -56,13 +51,11 @@ input, select, textarea, button {
     margin-top: 2px;
 }
 
-/* BUTTON */
 button {
     background-color: #d4d0c8;
     margin-top: 6px;
 }
 
-/* OUTPUT */
 .output {
     background-color: #000000;
     color: #00ff00;
@@ -128,31 +121,48 @@ button {
 
     <button onclick="sendPOD()">SEND</button>
 
-    <div class="output" id="out"></div>
+    <div class="output" id="out">READY</div>
 
 </div>
 
+</div>
 </div>
 
 <script>
 var API_URL = "https://script.google.com/macros/s/AKfycbyuNEpOksgP5xs_wdTBBv3MLPle_dFltxLhYI3F1ieVl97oQLZ-b7ZrGYklCh1FYKLnNA/exec";
 
+// LOGIN FUNCTION
 function login() {
-    if (userid.value == "" || passid.value == "") {
+    var uid = document.getElementById("userid").value;
+    var pid = document.getElementById("passid").value;
+
+    if (uid === "" || pid === "") {
         alert("Missing credentials");
         return;
     }
-    login.style.display = "none";
-    main.style.display = "block";
+
+    document.getElementById("login").style.display = "none";
+    document.getElementById("main").style.display = "block";
 }
 
+// SEND POD FUNCTION
 function sendPOD() {
-    if (status.value == "DL" && service.value == "EXPRESS" && sig.value == "") {
+    var uid = document.getElementById("userid").value;
+    var pid = document.getElementById("passid").value;
+    var from = document.getElementById("from").value;
+    var to = document.getElementById("to").value;
+    var service = document.getElementById("service").value;
+    var trk = document.getElementById("trk").value;
+    var status = document.getElementById("status").value;
+    var sig = document.getElementById("sig").value;
+    var note = document.getElementById("note").value;
+
+    if (status === "DL" && service === "EXPRESS" && sig === "") {
         alert("Signature required");
         return;
     }
 
-    if (trk.value == "" && (from.value == "" || to.value == "")) {
+    if (trk === "" && (from === "" || to === "")) {
         alert("Enter TRK or FROM + TO");
         return;
     }
@@ -162,25 +172,23 @@ function sendPOD() {
     xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
 
     xhr.onreadystatechange = function () {
-        if (xhr.readyState == 4) {
-            out.innerHTML = xhr.responseText;
+        if (xhr.readyState === 4) {
+            document.getElementById("out").innerHTML = xhr.responseText;
         }
     };
 
     xhr.send(
-        "userid=" + e(userid.value) +
-        "&passid=" + e(passid.value) +
-        "&from=" + e(from.value) +
-        "&to=" + e(to.value) +
-        "&service=" + e(service.value) +
-        "&trk=" + e(trk.value) +
-        "&status=" + e(status.value) +
-        "&note=" + e(note.value) +
-        "&signature=" + e(sig.value)
+        "userid=" + encodeURIComponent(uid) +
+        "&passid=" + encodeURIComponent(pid) +
+        "&from=" + encodeURIComponent(from) +
+        "&to=" + encodeURIComponent(to) +
+        "&service=" + encodeURIComponent(service) +
+        "&trk=" + encodeURIComponent(trk) +
+        "&status=" + encodeURIComponent(status) +
+        "&note=" + encodeURIComponent(note) +
+        "&signature=" + encodeURIComponent(sig)
     );
 }
-
-function e(v) { return encodeURIComponent(v); }
 </script>
 
 </body>
