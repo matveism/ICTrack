@@ -1,194 +1,181 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Courier POD</title>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width">
+<title>Courier POD Terminal</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
 body {
-    background-color: #c0c0c0;
-    font-family: monospace;
-    font-weight: bold;
-    margin: 0;
-    padding: 0;
-}
-
-.container {
-    width: 240px;
-    margin: 0 auto;
-    border: 2px solid #000;
-    background-color: #e0e0e0;
-}
-
-.titlebar {
-    background-color: #000080;
-    color: #ffffff;
-    padding: 5px;
-    font-size: 12px;
-}
-
-.content {
-    padding: 6px;
-}
-
-.label {
-    font-size: 11px;
-    color: #003300;
-    margin-top: 4px;
-}
-
-input, select, textarea, button {
-    width: 100%;
-    box-sizing: border-box;
-    font-family: monospace;
-    font-weight: bold;
-    font-size: 12px;
-    background-color: #ffffff;
-    color: #003300;
-    border: 2px solid #000;
-    padding: 3px;
-    margin-top: 2px;
-}
-
-button {
-    background-color: #d4d0c8;
-    margin-top: 6px;
-}
-
-.output {
-    background-color: #000000;
+    background: black;
     color: #00ff00;
-    padding: 4px;
-    margin-top: 6px;
-    white-space: pre;
-    border: 2px inset #808080;
-    font-size: 11px;
+    font-family: monospace;
+    font-weight: bold;
+    margin:0;
+    padding:10px;
+}
+
+#terminal {
+    white-space: pre-wrap;
+    line-height: 1.2em;
+    min-height: 300px;
+}
+
+input.cmd {
+    background: black;
+    color: #00ff00;
+    border: none;
+    font-family: monospace;
+    font-weight: bold;
+    outline: none;
+    width: 100%;
 }
 </style>
 </head>
-
 <body>
 
-<div class="container">
-
-<div class="titlebar">Courier POD</div>
-
-<div class="content">
-
-<!-- LOGIN -->
-<div id="login">
-    <div class="label">UserID</div>
-    <input id="userid">
-
-    <div class="label">PassID</div>
-    <input type="password" id="passid">
-
-    <button onclick="login()">LOGIN</button>
+<div id="terminal">
+Courier POD Terminal v1.0  
+Type "HELP" for commands.  
+&gt; 
 </div>
-
-<!-- MAIN -->
-<div id="main" style="display:none;">
-
-    <div class="label">FROM</div>
-    <input id="from">
-
-    <div class="label">TO</div>
-    <input id="to">
-
-    <div class="label">SERVICE</div>
-    <select id="service">
-        <option value="STANDARD">STANDARD</option>
-        <option value="EXPRESS">EXPRESS</option>
-    </select>
-
-    <div class="label">TRK (4 DIGIT)</div>
-    <input id="trk" maxlength="4">
-
-    <div class="label">STATUS</div>
-    <select id="status">
-        <option value="A">A</option>
-        <option value="T">T</option>
-        <option value="O">O</option>
-        <option value="DL">DL</option>
-    </select>
-
-    <div class="label">SIGNATURE (EXPRESS+DL)</div>
-    <input id="sig">
-
-    <div class="label">NOTE</div>
-    <textarea id="note" rows="2"></textarea>
-
-    <button onclick="sendPOD()">SEND</button>
-
-    <div class="output" id="out">READY</div>
-
-</div>
-
-</div>
-</div>
+<input class="cmd" id="cmdInput" autofocus>
 
 <script>
-var API_URL = "https://script.google.com/macros/s/AKfycbyuNEpOksgP5xs_wdTBBv3MLPle_dFltxLhYI3F1ieVl97oQLZ-b7ZrGYklCh1FYKLnNA/exec";
+var API_URL = "https://script.google.com/macros/s/AKfycbyuNEpOksgP5xs_wdTBBv3MLPle_dFltxLhYI3F1ieVl97oQLZ-b7ZrGYklCh1FYKLnNA/exec"; // replace with your Apps Script webapp URL
+var terminal = document.getElementById("terminal");
+var input = document.getElementById("cmdInput");
 
-// LOGIN FUNCTION
-function login() {
-    var uid = document.getElementById("userid").value;
-    var pid = document.getElementById("passid").value;
+var session = {
+    loggedIn: false,
+    userid: "",
+    passid: ""
+};
 
-    if (uid === "" || pid === "") {
-        alert("Missing credentials");
-        return;
-    }
+// Command history
+var history = [];
+var historyIndex = 0;
 
-    document.getElementById("login").style.display = "none";
-    document.getElementById("main").style.display = "block";
+// Print line to terminal
+function printLine(text) {
+    terminal.innerText += text + "\n> ";
+    terminal.scrollTop = terminal.scrollHeight;
 }
 
-// SEND POD FUNCTION
-function sendPOD() {
-    var uid = document.getElementById("userid").value;
-    var pid = document.getElementById("passid").value;
-    var from = document.getElementById("from").value;
-    var to = document.getElementById("to").value;
-    var service = document.getElementById("service").value;
-    var trk = document.getElementById("trk").value;
-    var status = document.getElementById("status").value;
-    var sig = document.getElementById("sig").value;
-    var note = document.getElementById("note").value;
-
-    if (status === "DL" && service === "EXPRESS" && sig === "") {
-        alert("Signature required");
-        return;
-    }
-
-    if (trk === "" && (from === "" || to === "")) {
-        alert("Enter TRK or FROM + TO");
-        return;
-    }
-
+// Send POD or other requests to server
+function sendToServer(params, callback) {
     var xhr = new XMLHttpRequest();
     xhr.open("POST", API_URL, true);
-    xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-
-    xhr.onreadystatechange = function () {
-        if (xhr.readyState === 4) {
-            document.getElementById("out").innerHTML = xhr.responseText;
+    xhr.setRequestHeader("Content-Type","application/x-www-form-urlencoded");
+    xhr.onreadystatechange = function() {
+        if(xhr.readyState==4) {
+            callback(xhr.responseText);
         }
     };
-
-    xhr.send(
-        "userid=" + encodeURIComponent(uid) +
-        "&passid=" + encodeURIComponent(pid) +
-        "&from=" + encodeURIComponent(from) +
-        "&to=" + encodeURIComponent(to) +
-        "&service=" + encodeURIComponent(service) +
-        "&trk=" + encodeURIComponent(trk) +
-        "&status=" + encodeURIComponent(status) +
-        "&note=" + encodeURIComponent(note) +
-        "&signature=" + encodeURIComponent(sig)
-    );
+    xhr.send(params);
 }
+
+// Handle commands
+function handleCommand(cmd) {
+    cmd = cmd.trim();
+    if(cmd=="") return;
+
+    var args = cmd.split(" ");
+    var base = args[0].toUpperCase();
+
+    if(!session.loggedIn) {
+        if(base=="LOGIN") {
+            if(args.length<3) {
+                printLine("Usage: LOGIN <UserID> <PassID>");
+                return;
+            }
+            session.userid = args[1];
+            session.passid = args[2];
+            session.loggedIn = true;
+            printLine("Logged in as " + session.userid);
+        } else if(base=="HELP") {
+            printLine("Commands:\nLOGIN <UserID> <PassID>\nHELP");
+        } else {
+            printLine("Please LOGIN first.");
+        }
+    } else {
+        // Logged in commands
+        if(base=="POD") {
+            // Format: POD FROM TO SERVICE STATUS NOTE [SIGNATURE]
+            if(args.length<6) {
+                printLine("Usage: POD <FROM> <TO> <SERVICE> <STATUS> <NOTE> [SIGNATURE]");
+                return;
+            }
+            var from = args[1];
+            var to = args[2];
+            var service = args[3].toUpperCase();
+            var status = args[4].toUpperCase();
+            var note = args[5];
+            var signature = args[6] || "";
+
+            if(status=="DL" && service=="EXPRESS" && signature=="") {
+                printLine("Signature required for EXPRESS delivery");
+                return;
+            }
+
+            var postData = "userid=" + encodeURIComponent(session.userid) +
+                           "&passid=" + encodeURIComponent(session.passid) +
+                           "&from=" + encodeURIComponent(from) +
+                           "&to=" + encodeURIComponent(to) +
+                           "&service=" + encodeURIComponent(service) +
+                           "&status=" + encodeURIComponent(status) +
+                           "&note=" + encodeURIComponent(note) +
+                           "&signature=" + encodeURIComponent(signature);
+
+            sendToServer(postData, function(resp){
+                printLine(resp);
+            });
+
+        } else if(base=="TRACK") {
+            if(args.length<2) {
+                printLine("Usage: TRACK <TRK>");
+                return;
+            }
+            var trk = args[1];
+            sendToServer("trk=" + encodeURIComponent(trk), function(resp){
+                printLine(resp);
+            });
+        } else if(base=="HELP") {
+            printLine("Commands:\nPOD <FROM> <TO> <SERVICE> <STATUS> <NOTE> [SIGNATURE]\nTRACK <TRK>\nLOGOUT\nHELP");
+        } else if(base=="LOGOUT") {
+            session.loggedIn = false;
+            session.userid = "";
+            session.passid = "";
+            printLine("Logged out");
+        } else {
+            printLine("Unknown command: " + base);
+        }
+    }
+}
+
+input.addEventListener("keydown", function(e){
+    if(e.key=="Enter") {
+        var cmd = input.value;
+        printLine(cmd);
+        handleCommand(cmd);
+        history.push(cmd);
+        historyIndex = history.length;
+        input.value = "";
+        e.preventDefault();
+    } else if(e.key=="ArrowUp") {
+        if(historyIndex>0) {
+            historyIndex--;
+            input.value = history[historyIndex];
+        }
+    } else if(e.key=="ArrowDown") {
+        if(historyIndex<history.length-1) {
+            historyIndex++;
+            input.value = history[historyIndex];
+        } else {
+            input.value = "";
+        }
+    }
+});
 </script>
 
 </body>
