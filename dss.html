@@ -7,7 +7,6 @@
 body{background:black;color:#00ff00;font-family:monospace;font-weight:bold;padding:5px;margin:0}
 #terminal{white-space:pre;line-height:1.2em;font-size:12px;min-height:250px}
 input.cmd{background:black;color:#00ff00;border:none;width:100%;font-family:monospace;font-weight:bold;font-size:12px;outline:none}
-select.cmd{background:black;color:#00ff00;border:1px solid #00ff00;font-family:monospace;font-weight:bold;font-size:12px}
 </style>
 </head>
 <body>
@@ -24,14 +23,21 @@ Type UserID to login:
 var terminal=document.getElementById('terminal');
 var input=document.getElementById('cmdInput');
 
-var API="https://script.google.com/macros/s/AKfycbyuNEpOksgP5xs_wdTBBv3MLPle_dFltxLhYI3F1ieVl97oQLZ-b7ZrGYklCh1FYKLnNA/exec"; // old Android HTTP
+var API="https://script.google.com/macros/s/AKfycbyuNEpOksgP5xs_wdTBBv3MLPle_dFltxLhYI3F1ieVl97oQLZ-b7ZrGYklCh1FYKLnNA/exec";
 var session={loggedIn:false,userid:"",trk:"",service:"STANDARD"};
 
-function println(txt){ terminal.innerHTML+=txt+"\n&gt;"; window.scrollTo(0,document.body.scrollHeight); }
+// helper to print and auto-scroll
+function println(txt){ 
+    terminal.innerHTML+=txt+"\n&gt;"; 
+    window.scrollTo(0,document.body.scrollHeight); 
+    input.focus(); // always focus after printing
+}
 
-input.onkeypress=function(e){
+// handle Enter
+input.onkeydown=function(e){
     if(!e) e=window.event;
-    if(e.keyCode==13){
+    var key = e.key || e.keyCode || 0;
+    if(key===13 || key===10){
         var val=input.value;
         input.value="";
         processInput(val);
@@ -70,14 +76,19 @@ function processInput(val){
         var note=prompt("Enter Note (optional)","");
         var signature="";
         if(status=="DL"){
-            signature=prompt("Enter Signature if EXPRESS",""); // simple prompt for signature
+            signature=prompt("Enter Signature if EXPRESS","");
         }
 
         // send to server
         var xhr=new XMLHttpRequest();
         xhr.open("POST",API,true);
         xhr.setRequestHeader("Content-Type","application/x-www-form-urlencoded");
-        xhr.onreadystatechange=function(){if(xhr.readyState==4){println(xhr.responseText+"\nEnter next TRK:"); session.trk="";}};
+        xhr.onreadystatechange=function(){
+            if(xhr.readyState==4){
+                println(xhr.responseText+"\nEnter next TRK:");
+                session.trk="";
+            }
+        };
         var data="userid="+encodeURIComponent(session.userid)+
                  "&passid="+encodeURIComponent(session.passid)+
                  "&trk="+encodeURIComponent(session.trk)+
@@ -90,6 +101,9 @@ function processInput(val){
 
     println("Invalid input. Enter status: A,T,O,DL");
 }
+
+// force focus on page load
+window.onload=function(){ input.focus(); }
 </script>
 
 </body>
