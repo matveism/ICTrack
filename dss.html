@@ -3,10 +3,34 @@
 <head>
 <meta charset="utf-8">
 <title>Courier POD Terminal</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
-body{background:black;color:#00ff00;font-family:monospace;font-weight:bold;padding:5px;margin:0}
-#terminal{white-space:pre;line-height:1.2em;font-size:12px;min-height:250px}
-input.cmd{background:black;color:#00ff00;border:none;width:100%;font-family:monospace;font-weight:bold;font-size:12px;outline:none}
+body {
+    background: black;
+    color: #00ff00;
+    font-family: monospace;
+    font-weight: bold;
+    margin: 0;
+    padding: 5px;
+}
+#terminal {
+    white-space: pre;
+    line-height: 1.2em;
+    font-size: 12px;
+    min-height: 250px;
+}
+input.cmd {
+    background: black;
+    color: #00ff00;
+    border: 1px solid #00ff00;
+    width: 100%;
+    font-family: monospace;
+    font-weight: bold;
+    font-size: 12px;
+    outline: none;
+    padding: 2px;
+    margin-top: 4px;
+}
 </style>
 </head>
 <body>
@@ -17,111 +41,102 @@ Type UserID to login:
 &gt;
 </div>
 
-<input type="text" id="cmdInput" class="cmd" autocomplete="off">
+<input type="text" id="cmdInput" class="cmd" autocomplete="off" autofocus>
 
 <script>
-var terminal=document.getElementById('terminal');
-var input=document.getElementById('cmdInput');
+var terminal = document.getElementById('terminal');
+var input = document.getElementById('cmdInput');
 
-var API="https://script.google.com/macros/s/AKfycbyuNEpOksgP5xs_wdTBBv3MLPle_dFltxLhYI3F1ieVl97oQLZ-b7ZrGYklCh1FYKLnNA/exec";
-var session={stage:"login", userid:"", passid:"", trk:"", status:"", note:"", signature:""};
+var API = "https://script.google.com/macros/s/AKfycbyuNEpOksgP5xs_wdTBBv3MLPle_dFltxLhYI3F1ieVl97oQLZ-b7ZrGYklCh1FYKLnNA/exec"; // replace with your Apps Script URL
+var session = {
+    loggedIn: false,
+    waitingPass: false,
+    userid: "",
+    passid: "",
+    trk: "",
+    service: "STANDARD"
+};
 
-function println(txt){
-    terminal.innerHTML+=txt+"\n&gt;";
-    window.scrollTo(0,document.body.scrollHeight);
-    input.focus();
+function println(txt) {
+    terminal.innerHTML += txt + "\n&gt;";
+    window.scrollTo(0, document.body.scrollHeight);
 }
 
-// force focus on load
-window.onload=function(){ input.focus(); }
+// Force focus on input for old Android
+window.onload = function(){
+    setTimeout(function(){ input.focus(); }, 500);
+};
 
-// handle Enter key
-input.onkeydown=function(e){
-    e = e || window.event;
-    if(e.keyCode==13){
-        processInput(input.value);
-        input.value="";
+// Handle Enter key
+input.onkeypress = function(e) {
+    if (!e) e = window.event;
+    if (e.keyCode == 13) {
+        var val = input.value.trim();
+        input.value = "";
+        processInput(val);
         return false;
     }
 };
 
 function processInput(val){
-    val=val.trim();
     if(val=="") return;
 
-    switch(session.stage){
-        case "login":
-            session.userid=val;
+    // Login flow
+    if(!session.loggedIn){
+        if(!session.waitingPass){
+            session.userid = val;
             println("UserID entered. Now enter PassID:");
-            session.stage="pass";
-            break;
-
-        case "pass":
-            session.passid=val;
+            session.waitingPass = true;
+            return;
+        } else {
+            session.passid = val;
+            session.loggedIn = true;
+            session.waitingPass = false;
             println("Logged in as "+session.userid);
             println("Enter Tracking ID:");
-            session.stage="trk";
-            break;
-
-        case "trk":
-            session.trk=val;
-            println("TRK: "+session.trk);
-            println("Select Status: A=Accepted, T=In Transit, O=Out for Delivery, DL=Delivered");
-            session.stage="status";
-            break;
-
-        case "status":
-            var s=val.toUpperCase();
-            if(["A","T","O","DL"].indexOf(s)<0){
-                println("Invalid status. Enter A, T, O, or DL:");
-                break;
-            }
-            session.status=s;
-
-            // ask note inline
-            println("Enter note (or leave blank) and press Enter:");
-            session.stage="note";
-            break;
-
-        case "note":
-            session.note=val;
-            if(session.status=="DL"){
-                println("Enter signature for EXPRESS (or leave blank) and press Enter:");
-                session.stage="signature";
-            } else {
-                sendPOD();
-            }
-            break;
-
-        case "signature":
-            session.signature=val;
-            sendPOD();
-            break;
-    }
-}
-
-function sendPOD(){
-    var xhr=new XMLHttpRequest();
-    xhr.open("POST",API,true);
-    xhr.setRequestHeader("Content-Type","application/x-www-form-urlencoded");
-    xhr.onreadystatechange=function(){
-        if(xhr.readyState==4){
-            println("Server Response: "+xhr.responseText);
-            println("Enter next Tracking ID:");
-            session.stage="trk";
-            session.trk="";
-            session.status="";
-            session.note="";
-            session.signature="";
+            return;
         }
-    };
-    var data="userid="+encodeURIComponent(session.userid)+
-             "&passid="+encodeURIComponent(session.passid)+
-             "&trk="+encodeURIComponent(session.trk)+
-             "&status="+encodeURIComponent(session.status)+
-             "&note="+encodeURIComponent(session.note)+
-             "&signature="+encodeURIComponent(session.signature);
-    xhr.send(data);
+    }
+
+    // Tracking ID
+    if(!session.trk){
+        session.trk = val;
+        println("TRK: "+session.trk);
+        println("Select Status: A=Accepted, T=In Transit, O=Out for Delivery, DL=Delivered");
+        return;
+    }
+
+    // Status selection
+    var status = val.toUpperCase();
+    if(["A","T","O","DL"].indexOf(status) >= 0){
+        var note = prompt("Enter Note (optional)","");
+        var signature = "";
+        if(status=="DL"){
+            signature = prompt("Enter Signature if EXPRESS","");
+        }
+
+        // Send to server
+        var xhr = new XMLHttpRequest();
+        xhr.open("POST", API, true);
+        xhr.setRequestHeader("Content-Type","application/x-www-form-urlencoded");
+        xhr.onreadystatechange = function(){
+            if(xhr.readyState==4){
+                println("Server response: " + xhr.responseText);
+                println("Enter next Tracking ID:");
+                session.trk = "";
+            }
+        };
+        var data = "userid="+encodeURIComponent(session.userid)+
+                   "&passid="+encodeURIComponent(session.passid)+
+                   "&trk="+encodeURIComponent(session.trk)+
+                   "&status="+encodeURIComponent(status)+
+                   "&note="+encodeURIComponent(note)+
+                   "&signature="+encodeURIComponent(signature);
+        xhr.send(data);
+        return;
+    }
+
+    println("Invalid input. Type status: A, T, O, DL");
 }
 </script>
 
