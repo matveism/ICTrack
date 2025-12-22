@@ -5,77 +5,90 @@
 <title>Courier POD Terminal</title>
 <style>
 body{background:black;color:#00ff00;font-family:monospace;font-weight:bold;padding:5px;margin:0}
-#out{white-space:pre;line-height:1.2em;font-size:12px}
+#terminal{white-space:pre;line-height:1.2em;font-size:12px;min-height:250px}
 input.cmd{background:black;color:#00ff00;border:none;width:100%;font-family:monospace;font-weight:bold;font-size:12px;outline:none}
+select.cmd{background:black;color:#00ff00;border:1px solid #00ff00;font-family:monospace;font-weight:bold;font-size:12px}
 </style>
 </head>
 <body>
 
-<div id="out">
+<div id="terminal">
 Courier POD Terminal v1.0
-Type HELP for commands.
+Type UserID to login:
 &gt;
 </div>
 
-<form id="cmdForm" onsubmit="return runCmd();">
 <input type="text" id="cmdInput" class="cmd" autocomplete="off">
-</form>
 
 <script>
-var terminal = document.getElementById('out');
-var input = document.getElementById('cmdInput');
+var terminal=document.getElementById('terminal');
+var input=document.getElementById('cmdInput');
 
-var API = "https://script.google.com/macros/s/AKfycbyuNEpOksgP5xs_wdTBBv3MLPle_dFltxLhYI3F1ieVl97oQLZ-b7ZrGYklCh1FYKLnNA/exec"; // MUST be HTTP for Android 2.3.3
-var session = {loggedIn:false, userid:"", passid:""};
+var API="https://script.google.com/macros/s/AKfycbyuNEpOksgP5xs_wdTBBv3MLPle_dFltxLhYI3F1ieVl97oQLZ-b7ZrGYklCh1FYKLnNA/exec"; // old Android HTTP
+var session={loggedIn:false,userid:"",trk:"",service:"STANDARD"};
 
-function println(txt){ terminal.innerHTML += txt + "\n&gt;"; window.scrollTo(0,document.body.scrollHeight); }
+function println(txt){ terminal.innerHTML+=txt+"\n&gt;"; window.scrollTo(0,document.body.scrollHeight); }
 
-function runCmd() {
-    var cmd = input.value;
-    println(cmd);
-    input.value="";
-
-    var parts = cmd.split(" ");
-    var base = parts[0].toUpperCase();
-
-    if(!session.loggedIn) {
-        if(base=="LOGIN"){
-            if(parts.length<3){ println("Usage: LOGIN <UserID> <PassID>"); return false; }
-            session.userid = parts[1];
-            session.passid = parts[2];
-            session.loggedIn = true;
-            println("Logged in as "+session.userid);
-        } else if(base=="HELP") {
-            println("Commands:\nLOGIN <UserID> <PassID>\nHELP");
-        } else {
-            println("Please LOGIN first.");
-        }
-    } else {
-        if(base=="POD"){
-            if(parts.length<6){ println("Usage: POD <FROM> <TO> <SERVICE> <STATUS> <NOTE> [SIGNATURE]"); return false; }
-            var from=parts[1], to=parts[2], svc=parts[3].toUpperCase(), status=parts[4].toUpperCase(), note=parts[5], sig=parts[6]||"";
-
-            if(status=="DL" && svc=="EXPRESS" && sig==""){ println("Signature required"); return false; }
-
-            var xhr = new XMLHttpRequest();
-            xhr.open("POST",API,true);
-            xhr.setRequestHeader("Content-Type","application/x-www-form-urlencoded");
-            xhr.onreadystatechange=function(){ if(xhr.readyState==4){ println(xhr.responseText); } };
-            var data="userid="+session.userid+"&passid="+session.passid+"&from="+from+"&to="+to+"&service="+svc+"&status="+status+"&note="+note+"&signature="+sig;
-            xhr.send(data);
-
-        } else if(base=="TRACK"){
-            if(parts.length<2){ println("Usage: TRACK <TRK>"); return false; }
-            var trk=parts[1];
-            var xhr = new XMLHttpRequest();
-            xhr.open("GET",API+"?trk="+trk,true);
-            xhr.onreadystatechange=function(){ if(xhr.readyState==4){ println(xhr.responseText); } };
-            xhr.send(null);
-        } else if(base=="LOGOUT"){ session.loggedIn=false; println("Logged out"); }
-        else if(base=="HELP"){ println("Commands:\nPOD <FROM> <TO> <SERVICE> <STATUS> <NOTE> [SIGNATURE]\nTRACK <TRK>\nLOGOUT\nHELP"); }
-        else { println("Unknown command: "+base); }
+input.onkeypress=function(e){
+    if(!e) e=window.event;
+    if(e.keyCode==13){
+        var val=input.value;
+        input.value="";
+        processInput(val);
+        return false;
     }
-    return false;
+}
+
+function processInput(val){
+    val=val.trim();
+    if(val=="") return;
+
+    if(!session.loggedIn){
+        session.userid=val;
+        println("UserID entered. Now enter PassID:");
+        session.loggedIn="pass"; // waiting for password
+        return;
+    }
+
+    if(session.loggedIn=="pass"){
+        session.passid=val;
+        session.loggedIn=true;
+        println("Logged in as "+session.userid);
+        println("Enter Tracking ID:");
+        return;
+    }
+
+    if(!session.trk){
+        session.trk=val;
+        println("TRK: "+session.trk);
+        println("Select Status: A=Accepted, T=In Transit, O=Out for Delivery, DL=Delivered");
+        return;
+    }
+
+    if(["A","T","O","DL"].indexOf(val.toUpperCase())>=0){
+        var status=val.toUpperCase();
+        var note=prompt("Enter Note (optional)","");
+        var signature="";
+        if(status=="DL"){
+            signature=prompt("Enter Signature if EXPRESS",""); // simple prompt for signature
+        }
+
+        // send to server
+        var xhr=new XMLHttpRequest();
+        xhr.open("POST",API,true);
+        xhr.setRequestHeader("Content-Type","application/x-www-form-urlencoded");
+        xhr.onreadystatechange=function(){if(xhr.readyState==4){println(xhr.responseText+"\nEnter next TRK:"); session.trk="";}};
+        var data="userid="+encodeURIComponent(session.userid)+
+                 "&passid="+encodeURIComponent(session.passid)+
+                 "&trk="+encodeURIComponent(session.trk)+
+                 "&status="+encodeURIComponent(status)+
+                 "&note="+encodeURIComponent(note)+
+                 "&signature="+encodeURIComponent(signature);
+        xhr.send(data);
+        return;
+    }
+
+    println("Invalid input. Enter status: A,T,O,DL");
 }
 </script>
 
