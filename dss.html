@@ -19,7 +19,7 @@ body {
     font-size: 12px;
     min-height: 250px;
 }
-input.cmd {
+input.cmd, button.cmd {
     background: black;
     color: #00ff00;
     border: 1px solid #00ff00;
@@ -31,6 +31,9 @@ input.cmd {
     padding: 2px;
     margin-top: 4px;
 }
+button.cmd {
+    cursor: pointer;
+}
 </style>
 </head>
 <body>
@@ -41,13 +44,15 @@ Type UserID to login:
 &gt;
 </div>
 
-<input type="text" id="cmdInput" class="cmd" autocomplete="off" autofocus>
+<input type="text" id="cmdInput" class="cmd" autocomplete="off">
+<button class="cmd" onclick="submitInput()">ENTER</button>
 
 <script>
 var terminal = document.getElementById('terminal');
 var input = document.getElementById('cmdInput');
 
 var API = "https://script.google.com/macros/s/AKfycbyuNEpOksgP5xs_wdTBBv3MLPle_dFltxLhYI3F1ieVl97oQLZ-b7ZrGYklCh1FYKLnNA/exec"; // replace with your Apps Script URL
+
 var session = {
     loggedIn: false,
     waitingPass: false,
@@ -62,22 +67,13 @@ function println(txt) {
     window.scrollTo(0, document.body.scrollHeight);
 }
 
-// Force focus on input for old Android
-window.onload = function(){
-    setTimeout(function(){ input.focus(); }, 500);
-};
+function submitInput() {
+    var val = input.value.trim();
+    input.value = "";
+    processInput(val);
+}
 
-// Handle Enter key
-input.onkeypress = function(e) {
-    if (!e) e = window.event;
-    if (e.keyCode == 13) {
-        var val = input.value.trim();
-        input.value = "";
-        processInput(val);
-        return false;
-    }
-};
-
+// Process user input
 function processInput(val){
     if(val=="") return;
 
@@ -138,6 +134,9 @@ function processInput(val){
 
     println("Invalid input. Type status: A, T, O, DL");
 }
+
+// Force focus on input (old devices)
+window.onload = function(){ setTimeout(function(){ input.focus(); },500); };
 </script>
 
 </body>
