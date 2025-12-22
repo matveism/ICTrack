@@ -34,6 +34,18 @@ input.cmd, button.cmd {
 button.cmd {
     cursor: pointer;
 }
+button.scan-btn {
+    background: black;
+    color: #00ff00;
+    border: 1px solid #00ff00;
+    font-family: monospace;
+    font-weight: bold;
+    font-size: 12px;
+    padding: 2px 5px;
+    margin-top: 4px;
+    margin-left: 4px;
+    display: inline-block;
+}
 </style>
 </head>
 <body>
@@ -44,8 +56,9 @@ Type UserID to login:
 &gt;
 </div>
 
-<input type="text" id="cmdInput" class="cmd" autocomplete="off">
+<input type="text" id="cmdInput" class="cmd" autocomplete="off" placeholder="Enter Tracking ID">
 <button class="cmd" onclick="submitInput()">ENTER</button>
+<button class="scan-btn" onclick="scanTracking()">SCAN</button>
 
 <script>
 var terminal = document.getElementById('terminal');
@@ -73,7 +86,6 @@ function submitInput() {
     processInput(val);
 }
 
-// Process user input
 function processInput(val){
     if(val=="") return;
 
@@ -89,7 +101,7 @@ function processInput(val){
             session.loggedIn = true;
             session.waitingPass = false;
             println("Logged in as "+session.userid);
-            println("Enter Tracking ID:");
+            println("Enter Tracking ID or click SCAN:");
             return;
         }
     }
@@ -118,7 +130,7 @@ function processInput(val){
         xhr.onreadystatechange = function(){
             if(xhr.readyState==4){
                 println("Server response: " + xhr.responseText);
-                println("Enter next Tracking ID:");
+                println("Enter next Tracking ID or click SCAN:");
                 session.trk = "";
             }
         };
@@ -133,6 +145,13 @@ function processInput(val){
     }
 
     println("Invalid input. Type status: A, T, O, DL");
+}
+
+// ZXing scan redirect
+function scanTracking() {
+    var zxingURL = "https://zxing.org/w/decode.jspx";
+    // Open ZXing in a new tab for scanning
+    window.open(zxingURL, "_blank");
 }
 
 // Force focus on input (old devices)
