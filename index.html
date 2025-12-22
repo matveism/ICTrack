@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Track</title>
+<meta name="viewport" content="width=device-width">
+
+<style>
+body {
+    background-color: #c0c0c0;
+    font-family: monospace;
+    font-weight: bold;
+    margin: 0;
+    padding: 0;
+}
+
+/* SAFE WIDTH FOR 2.6" */
+.container {
+    width: 240px;
+    margin: 0 auto;
+    border: 2px solid #000;
+    background-color: #e0e0e0;
+}
+
+/* TITLE BAR */
+.titlebar {
+    background-color: #000080;
+    color: #ffffff;
+    padding: 4px;
+    font-size: 12px;
+}
+
+/* CONTENT */
+.content {
+    padding: 6px;
+}
+
+/* LABEL */
+.label {
+    font-size: 11px;
+    color: #003300;
+    margin-top: 4px;
+}
+
+/* INPUT + BUTTON */
+input, button {
+    width: 100%;
+    box-sizing: border-box;
+    font-family: monospace;
+    font-weight: bold;
+    font-size: 12px;
+    background-color: #ffffff;
+    color: #003300;
+    border: 2px solid #000;
+    padding: 4px;
+    margin-top: 3px;
+}
+
+/* BUTTON LOOK */
+button {
+    background-color: #d4d0c8;
+}
+
+/* OUTPUT TERMINAL */
+.output {
+    background-color: #000000;
+    color: #00ff00;
+    border: 2px inset #808080;
+    padding: 4px;
+    margin-top: 6px;
+    font-size: 11px;
+    white-space: pre-wrap;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<div class="titlebar">TRACK PACKAGE</div>
+
+<div class="content">
+
+<div class="label">TRK (4 DIGITS)</div>
+<input id="trk" maxlength="4">
+
+<button onclick="go()">TRACK</button>
+
+<div class="output" id="out">
+READY
+</div>
+
+</div>
+</div>
+
+<script>
+var API = "https://script.google.com/macros/s/AKfycbyuNEpOksgP5xs_wdTBBv3MLPle_dFltxLhYI3F1ieVl97oQLZ-b7ZrGYklCh1FYKLnNA/exec";
+
+function go() {
+    if (trk.value == "") {
+        alert("Enter TRK");
+        return;
+    }
+
+    out.innerHTML = "SEARCHING...";
+
+    var xhr = new XMLHttpRequest();
+    xhr.open("GET", API + "?trk=" + encodeURIComponent(trk.value), true);
+
+    xhr.onreadystatechange = function () {
+        if (xhr.readyState == 4) {
+            out.innerHTML = xhr.responseText || "NO DATA";
+        }
+    };
+
+    xhr.send(null);
+}
+</script>
+
+</body>
+</html>
