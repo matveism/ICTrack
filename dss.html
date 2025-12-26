@@ -5,86 +5,52 @@
 <title>DashGo POD</title>
 
 <style>
-body {
+body{
     background:#000;
     color:#00ff00;
-    font-family: monospace;
+    font-family:monospace;
     font-size:12px;
     font-weight:bold;
     margin:0;
     padding:10px;
 }
-
-.container {
-    max-width:260px;
-    margin:0 auto;
-}
-
-.header {
-    text-align:center;
-}
-
-hr {
-    border:0;
-    border-top:1px dashed #00ff00;
-    margin:10px 0;
-}
-
-label {
-    display:block;
-    margin-top:8px;
-}
-
-input, select, button {
+.container{max-width:260px;margin:0 auto;}
+.header{text-align:center;}
+hr{border:0;border-top:1px dashed #00ff00;margin:10px 0;}
+label{display:block;margin-top:8px;}
+input,select,button{
     width:100%;
     background:#000;
     color:#00ff00;
     border:1px solid #00ff00;
-    font-family: monospace;
+    font-family:monospace;
     font-size:12px;
     font-weight:bold;
     padding:4px;
     margin-top:4px;
 }
-
-button {
-    margin-top:10px;
-}
-
-.hidden {
-    display:none;
-}
-
-.msg {
-    margin-top:8px;
-    font-size:11px;
-}
+button{margin-top:10px;}
+.hidden{display:none;}
+.msg{margin-top:8px;font-size:11px;}
 </style>
-
 </head>
+
 <body>
 
 <div class="container">
 
-<div class="header">
-    DashGo Logon POD
-</div>
-
+<div class="header">DashGo Logon POD</div>
 <hr>
 
-<!-- LOGIN -->
 <div id="loginBox">
     <label>CID</label>
     <input type="text" id="cid">
-
     <label>PID</label>
     <input type="text" id="pid">
-
     <button onclick="logon()">LOGON</button>
     <div id="loginMsg" class="msg"></div>
 </div>
 
-<!-- PICKUP CONFIRM -->
 <div id="pickupBox" class="hidden">
 
     <label>Confirm Tracking ID</label>
@@ -114,85 +80,69 @@ button {
 
     <button onclick="submitPickup()">CONFIRM PICKUP</button>
     <div id="pickupMsg" class="msg"></div>
-
 </div>
 
 </div>
 
 <script>
-var CID="";
-var PID="";
+var CID="",PID="";
+var URL="https://script.google.com/macros/s/AKfycbzgBEwDq1Hwl1weE2YbjHgeHhv3GdELuVkRpGYwwrZ4VQo0V5KQtDLmnFSyIRpr5fwI/exec";
 
-function setDT(){
+function dt(){
     var d=new Date();
     document.getElementById("dt").value=
-        d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate()+" "+
-        d.getHours()+":"+d.getMinutes()+":"+d.getSeconds();
+    d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate()+" "+
+    d.getHours()+":"+d.getMinutes()+":"+d.getSeconds();
 }
 
 function logon(){
     CID=document.getElementById("cid").value;
     PID=document.getElementById("pid").value;
+    if(CID==""||PID==""){alert("CID / PID REQUIRED");return;}
 
-    if(CID==""||PID==""){
-        alert("CID / PID REQUIRED");
-        return;
-    }
-
-    var xhr=new XMLHttpRequest();
-    xhr.open("POST","YOUR_APPS_SCRIPT_URL",true);
-    xhr.setRequestHeader("Content-Type","application/x-www-form-urlencoded");
-
-    xhr.onreadystatechange=function(){
-        if(xhr.readyState==4){
-            if(xhr.responseText=="OK"){
+    var x=new XMLHttpRequest();
+    x.open("POST",URL,true);
+    x.setRequestHeader("Content-Type","application/x-www-form-urlencoded");
+    x.onreadystatechange=function(){
+        if(x.readyState==4){
+            if(x.responseText=="OK"){
                 document.getElementById("loginBox").style.display="none";
                 document.getElementById("pickupBox").style.display="block";
-                setDT();
+                dt();
             }else{
                 document.getElementById("loginMsg").innerHTML="INVALID LOGIN";
             }
         }
     };
-
-    xhr.send("action=login&cid="+encodeURIComponent(CID)+"&pid="+encodeURIComponent(PID));
+    x.send("action=login&cid="+encodeURIComponent(CID)+"&pid="+encodeURIComponent(PID));
 }
 
 function submitPickup(){
-
-    setDT();
-
+    dt();
     var trk=document.getElementById("trk").value;
-    var loc=document.getElementById("loc").value;
-    var status=document.getElementById("status").value;
+    if(trk==""){alert("TRACKING REQUIRED");return;}
 
-    if(trk==""){
-        alert("TRACKING REQUIRED");
-        return;
-    }
+    var x=new XMLHttpRequest();
+    x.open("POST",URL,true);
+    x.setRequestHeader("Content-Type","application/x-www-form-urlencoded");
+    x.onreadystatechange=function(){
+        if(x.readyState==4){
+            document.getElementById("pickupMsg").innerHTML=x.responseText;
+        }
+    };
 
-    var data=
+    x.send(
         "action=pickup"+
         "&cid="+encodeURIComponent(CID)+
         "&pid="+encodeURIComponent(PID)+
         "&trk="+encodeURIComponent(trk)+
         "&dt="+encodeURIComponent(document.getElementById("dt").value)+
-        "&loc="+encodeURIComponent(loc)+
-        "&status="+encodeURIComponent(status);
-
-    var xhr=new XMLHttpRequest();
-    xhr.open("POST","https://script.google.com/macros/s/AKfycbzgBEwDq1Hwl1weE2YbjHgeHhv3GdELuVkRpGYwwrZ4VQo0V5KQtDLmnFSyIRpr5fwI/exec",true);
-    xhr.setRequestHeader("Content-Type","application/x-www-form-urlencoded");
-
-    xhr.onreadystatechange=function(){
-        if(xhr.readyState==4){
-            document.getElementById("pickupMsg").innerHTML=xhr.responseText;
-        }
-    };
-
-    xhr.send(data);
+        "&loc="+encodeURIComponent(document.getElementById("loc").value)+
+        "&status="+encodeURIComponent(document.getElementById("status").value)
+    );
 }
 </script>
 
 </body>
 </html>
+
