@@ -2,88 +2,89 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>DashGo Track</title>
-
+<title>DashGo POD</title>
 <style>
-body{
-  background:gray;
-  color:black;
-  font-family:monospace;
-  font-size:12px;
-  font-weight:bold;
-  margin:0;
-  padding:10px;
-}
+body{background:#000;color:#0f0;font-family:monospace;font-size:12px;font-weight:bold;padding:10px;}
 .container{max-width:260px;margin:0 auto;}
-.header{text-align:center;}
-hr{border:0;border-top:1px dashed #00ff00;margin:10px 0;}
-input,button{
-  width:100%;
-  background:#000;
-  color:#00ff00;
-  border:1px solid #00ff00;
-  font-family:monospace;
-  font-size:12px;
-  font-weight:bold;
-  padding:4px;
-  margin-top:6px;
-}
-.result{margin-top:10px;font-size:11px;}
-.line{margin-top:4px;}
+hr{border:0;border-top:1px dashed #0f0;margin:10px 0;}
+input,select,button{width:100%;background:#000;color:#0f0;border:1px solid #0f0;font-family:monospace;font-size:12px;font-weight:bold;padding:4px;margin-top:6px;}
+.hidden{display:none;}
 </style>
 </head>
-
 <body>
 
 <div class="container">
-
-<div class="header">DashGo Package Tracking</div>
+<div style="text-align:center">DashGo Logon POD</div>
 <hr>
 
-<label>Tracking Number</label>
-<input type="text" id="trk">
+<!-- LOGIN -->
+<div id="loginBox">
+<label>CID</label><input type="text" id="cidInput">
+<label>PID</label><input type="text" id="pidInput">
+<button onclick="login()">LOGON</button>
+<div id="loginMsg"></div>
+</div>
 
-<button onclick="track()">TRACK</button>
+<!-- PICKUP -->
+<div id="pickupBox" class="hidden">
+<form id="pickupForm" method="POST" enctype="multipart/form-data" action="YOUR_SCRIPT_URL">
+<input type="hidden" name="action" value="pickup">
+<input type="hidden" name="cid" id="cid">
+<input type="hidden" name="pid" id="pid">
+<input type="hidden" name="dt" id="dt">
 
-<div id="res" class="result"></div>
+<label>Tracking ID (auto-filled)</label>
+<input type="text" name="trk" id="trk">
+
+<label>Location</label>
+<input type="text" name="loc">
+
+<label>Status</label>
+<select name="status">
+<option>ITEM DATA RECEIVED</option>
+<option>ITEM HANDED TO COURIER</option>
+<option>ITEM SCANNED AT UNLOAD HUB</option>
+<option>ITEM PROCESSED</option>
+<option>ITEM MOVING THRU NETWORK</option>
+<option>ITEM DEPARTED HUB</option>
+<option>ITEM EN ROUTE</option>
+<option>ITEM DELAYED</option>
+<option>ITEM SCANNED AT LOCAL UNLOAD HUB</option>
+<option>ITEM PROCESSED WITH LOAD HUB</option>
+<option>ITEM OUT FOR DELIVERY</option>
+<option>ITEM DELIVERED</option>
+</select>
+
+<label>Photo of Shipping Label</label>
+<input type="file" name="file">
+
+<button type="submit">CONFIRM PICKUP</button>
+</form>
+<div id="pickupMsg"></div>
+</div>
 
 </div>
 
 <script>
-var URL="https://script.google.com/macros/s/AKfycbzgBEwDq1Hwl1weE2YbjHgeHhv3GdELuVkRpGYwwrZ4VQo0V5KQtDLmnFSyIRpr5fwI/exec";
-
-function track(){
-
-  var trk=document.getElementById("trk").value;
-  if(trk==""){alert("ENTER TRK");return;}
-
-  var x=new XMLHttpRequest();
-  x.open("GET",URL+"?action=track&trk="+encodeURIComponent(trk),true);
-
-  x.onreadystatechange=function(){
-    if(x.readyState==4){
-      show(x.responseText);
+function login(){
+  var cid=document.getElementById('cidInput').value;
+  var pid=document.getElementById('pidInput').value;
+  if(cid===""||pid===""){alert("CID/PID required");return;}
+  var xhr=new XMLHttpRequest();
+  xhr.open("POST","YOUR_SCRIPT_URL",true);
+  xhr.setRequestHeader("Content-Type","application/x-www-form-urlencoded");
+  xhr.onload=function(){
+    if(xhr.responseText==="OK"){
+      document.getElementById('loginBox').style.display="none";
+      document.getElementById('pickupBox').style.display="block";
+      document.getElementById('cid').value=cid;
+      document.getElementById('pid').value=pid;
+      document.getElementById('dt').value=new Date().toISOString().slice(0,19).replace('T',' ');
+    }else{
+      document.getElementById('loginMsg').innerText="INVALID LOGIN";
     }
   };
-
-  x.send(null);
-}
-
-function show(t){
-
-  if(t=="NOT FOUND"){
-    document.getElementById("res").innerHTML="TRACKING NOT FOUND";
-    return;
-  }
-
-  var p=t.split("|");
-
-  document.getElementById("res").innerHTML=
-    
-    "<div class='line'>TRK#: "+p[2]+"</div>"+
-    "<div class='line'>DATE: "+p[3]+"</div>"+
-    "<div class='line'>LOCATION: "+p[4]+"</div>"+
-    "<div class='line'>STATUS: "+p[5]+"</div>";
+  xhr.send("action=login&cid="+encodeURIComponent(cid)+"&pid="+encodeURIComponent(pid));
 }
 </script>
 
