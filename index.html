@@ -1,76 +1,35 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="utf-8">
-<title>Track</title>
-<meta name="viewport" content="width=device-width">
+<meta charset="UTF-8">
+<title>DashGo Track</title>
 
 <style>
-body {
-    background-color: #c0c0c0;
-    font-family: monospace;
-    font-weight: bold;
-    margin: 0;
-    padding: 0;
+body{
+  background:gray;
+  color:black;
+  font-family:monospace;
+  font-size:12px;
+  font-weight:bold;
+  margin:0;
+  padding:10px;
 }
-
-/* SAFE WIDTH FOR 2.6" */
-.container {
-    width: 240px;
-    margin: 0 auto;
-    border: 2px solid #000;
-    background-color: #e0e0e0;
+.container{max-width:260px;margin:0 auto;}
+.header{text-align:center;}
+hr{border:0;border-top:1px dashed #00ff00;margin:10px 0;}
+input,button{
+  width:100%;
+  background:#000;
+  color:#00ff00;
+  border:1px solid #00ff00;
+  font-family:monospace;
+  font-size:12px;
+  font-weight:bold;
+  padding:4px;
+  margin-top:6px;
 }
-
-/* TITLE BAR */
-.titlebar {
-    background-color: #000080;
-    color: #ffffff;
-    padding: 4px;
-    font-size: 12px;
-}
-
-/* CONTENT */
-.content {
-    padding: 6px;
-}
-
-/* LABEL */
-.label {
-    font-size: 11px;
-    color: #003300;
-    margin-top: 4px;
-}
-
-/* INPUT + BUTTON */
-input, button {
-    width: 100%;
-    box-sizing: border-box;
-    font-family: monospace;
-    font-weight: bold;
-    font-size: 12px;
-    background-color: #ffffff;
-    color: #003300;
-    border: 2px solid #000;
-    padding: 4px;
-    margin-top: 3px;
-}
-
-/* BUTTON LOOK */
-button {
-    background-color: #d4d0c8;
-}
-
-/* OUTPUT TERMINAL */
-.output {
-    background-color: #000000;
-    color: #00ff00;
-    border: 2px inset #808080;
-    padding: 4px;
-    margin-top: 6px;
-    font-size: 11px;
-    white-space: pre-wrap;
-}
+.result{margin-top:10px;font-size:11px;}
+.line{margin-top:4px;}
 </style>
 </head>
 
@@ -78,43 +37,53 @@ button {
 
 <div class="container">
 
-<div class="titlebar">TRACK PACKAGE</div>
+<div class="header">DashGo Package Tracking</div>
+<hr>
 
-<div class="content">
+<label>Tracking Number</label>
+<input type="text" id="trk">
 
-<div class="label">TRK (4 DIGITS)</div>
-<input id="trk" maxlength="4">
+<button onclick="track()">TRACK</button>
 
-<button onclick="go()">TRACK</button>
+<div id="res" class="result"></div>
 
-<div class="output" id="out">
-READY
-</div>
-
-</div>
 </div>
 
 <script>
-var API = "https://script.google.com/macros/s/AKfycbyuNEpOksgP5xs_wdTBBv3MLPle_dFltxLhYI3F1ieVl97oQLZ-b7ZrGYklCh1FYKLnNA/exec";
+var URL="https://script.google.com/macros/s/AKfycbzgBEwDq1Hwl1weE2YbjHgeHhv3GdELuVkRpGYwwrZ4VQo0V5KQtDLmnFSyIRpr5fwI/exec";
 
-function go() {
-    if (trk.value == "") {
-        alert("Enter TRK");
-        return;
+function track(){
+
+  var trk=document.getElementById("trk").value;
+  if(trk==""){alert("ENTER TRK");return;}
+
+  var x=new XMLHttpRequest();
+  x.open("GET",URL+"?action=track&trk="+encodeURIComponent(trk),true);
+
+  x.onreadystatechange=function(){
+    if(x.readyState==4){
+      show(x.responseText);
     }
+  };
 
-    out.innerHTML = "SEARCHING...";
+  x.send(null);
+}
 
-    var xhr = new XMLHttpRequest();
-    xhr.open("GET", API + "?trk=" + encodeURIComponent(trk.value), true);
+function show(t){
 
-    xhr.onreadystatechange = function () {
-        if (xhr.readyState == 4) {
-            out.innerHTML = xhr.responseText || "NO DATA";
-        }
-    };
+  if(t=="NOT FOUND"){
+    document.getElementById("res").innerHTML="TRACKING NOT FOUND";
+    return;
+  }
 
-    xhr.send(null);
+  var p=t.split("|");
+
+  document.getElementById("res").innerHTML=
+    
+    "<div class='line'>TRK#: "+p[2]+"</div>"+
+    "<div class='line'>DATE: "+p[3]+"</div>"+
+    "<div class='line'>LOCATION: "+p[4]+"</div>"+
+    "<div class='line'>STATUS: "+p[5]+"</div>";
 }
 </script>
 
