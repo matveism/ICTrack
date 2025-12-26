@@ -1,988 +1,198 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Barcode Scanner</title>
-    <style>
-        /* SIMPLE STYLES FOR OLD DEVICES */
-        * {
-            margin: 0;
-            padding: 0;
-        }
+<meta charset="UTF-8">
+<title>DashGo POD</title>
 
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #2c2c2c;
-            color: white;
-            font-size: 14px;
-            padding: 5px;
-        }
+<style>
+body {
+    background:#000;
+    color:#00ff00;
+    font-family: monospace;
+    font-size:12px;
+    font-weight:bold;
+    margin:0;
+    padding:10px;
+}
 
-        .container {
-            width: 100%;
-            max-width: 400px;
-            margin: 0 auto;
-            background-color: #1a1a1a;
-            border: 2px solid #555;
-        }
+.container {
+    max-width:260px;
+    margin:0 auto;
+}
 
-        .header {
-            background-color: #4a6a8a;
-            color: white;
-            padding: 10px;
-            text-align: center;
-            font-weight: bold;
-            font-size: 16px;
-            border-bottom: 2px solid #555;
-        }
+.header {
+    text-align:center;
+}
 
-        .section {
-            padding: 10px;
-            border-bottom: 1px solid #555;
-        }
+hr {
+    border:0;
+    border-top:1px dashed #00ff00;
+    margin:10px 0;
+}
 
-        .section-title {
-            color: #aaa;
-            margin-bottom: 5px;
-            font-size: 14px;
-        }
+label {
+    display:block;
+    margin-top:8px;
+}
 
-        .barcode-display {
-            background-color: #e8e8d0;
-            color: black;
-            padding: 10px;
-            margin: 5px 0;
-            font-size: 16px;
-            font-weight: bold;
-            text-align: center;
-            border: 1px solid #999;
-            min-height: 30px;
-        }
+input, select, button {
+    width:100%;
+    background:#000;
+    color:#00ff00;
+    border:1px solid #00ff00;
+    font-family: monospace;
+    font-size:12px;
+    font-weight:bold;
+    padding:4px;
+    margin-top:4px;
+}
 
-        .barcode-display.active {
-            background-color: #ff8c00;
-        }
+button {
+    margin-top:10px;
+}
 
-        .label-display {
-            background-color: #8ca8c8;
-            min-height: 60px;
-            padding: 10px;
-            border: 1px solid #6c8ca8;
-            color: black;
-            font-weight: bold;
-            font-size: 16px;
-            overflow: auto;
-        }
+.hidden {
+    display:none;
+}
 
-        /* Simple buttons */
-        .button {
-            display: block;
-            width: 100%;
-            padding: 12px;
-            margin: 5px 0;
-            background-color: #4a6a8a;
-            color: white;
-            border: 2px solid #2a3a4a;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            text-align: center;
-            text-decoration: none;
-        }
+.msg {
+    margin-top:8px;
+    font-size:11px;
+}
+</style>
 
-        .button:active {
-            background-color: #2a3a4a;
-        }
-
-        .button-group {
-            display: flex;
-            gap: 5px;
-            margin-top: 10px;
-        }
-
-        .button-group .button {
-            flex: 1;
-        }
-
-        /* Simple keypad */
-        .keypad {
-            display: table;
-            width: 100%;
-            border-spacing: 5px;
-            padding: 10px;
-            background-color: #2a3a4a;
-        }
-
-        .keypad-row {
-            display: table-row;
-        }
-
-        .key {
-            display: table-cell;
-            width: 33%;
-            padding: 15px;
-            background-color: #d8d8c0;
-            border: 2px solid #a8a890;
-            font-size: 18px;
-            font-weight: bold;
-            text-align: center;
-            cursor: pointer;
-            color: black;
-        }
-
-        .key:active {
-            background-color: #b8b8a0;
-        }
-
-        .special-key {
-            background-color: #3a4a5a;
-            color: white;
-            font-size: 14px;
-        }
-
-        /* Status bar */
-        .status-bar {
-            background-color: #2a3a4a;
-            padding: 5px 10px;
-            color: #aaa;
-            font-size: 12px;
-            text-align: center;
-            border-top: 1px solid #555;
-        }
-
-        /* Manual input */
-        .manual-input {
-            display: none;
-            width: 100%;
-            padding: 10px;
-            margin: 10px 0;
-            font-size: 18px;
-            text-align: center;
-            border: 2px solid #ff8c00;
-        }
-
-        /* Simple modal */
-        .modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.8);
-            z-index: 1000;
-            display: none;
-        }
-
-        .modal-content {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background-color: #1a1a1a;
-            border: 2px solid #555;
-            width: 90%;
-            max-width: 400px;
-        }
-
-        .modal-header {
-            background-color: #4a6a8a;
-            color: white;
-            padding: 10px;
-            font-weight: bold;
-            text-align: center;
-        }
-
-        .modal-body {
-            padding: 15px;
-        }
-
-        select, input[type="text"], input[type="date"], input[type="time"], textarea {
-            width: 100%;
-            padding: 8px;
-            margin: 5px 0;
-            font-size: 14px;
-            background-color: white;
-            color: black;
-            border: 1px solid #999;
-        }
-
-        textarea {
-            height: 60px;
-        }
-
-        /* Grid for barcode visualization */
-        .grid-row {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 1px;
-            margin-bottom: 5px;
-            justify-content: center;
-        }
-
-        .grid-cell {
-            width: 18px;
-            height: 18px;
-            background-color: #e8e8d0;
-            border: 1px solid #999;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 10px;
-            color: black;
-        }
-
-        .grid-cell.active {
-            background-color: #ff8c00;
-        }
-
-        .grid-cell.cursor {
-            background-color: #ff0000;
-            color: white;
-        }
-
-        /* ZXing instructions */
-        .zxing-instructions {
-            background-color: #4a6a8a;
-            color: white;
-            padding: 10px;
-            margin: 10px 0;
-            font-size: 12px;
-            border: 1px solid #2a3a4a;
-        }
-    </style>
 </head>
 <body>
-    <div class="container">
-        <!-- Header -->
-        <div class="header">BARCODE SCANNER v2.3.3</div>
-        
-        <!-- ZXing Instructions -->
-        <div class="zxing-instructions">
-            <strong>For best results:</strong><br>
-            1. Install "Barcode Scanner" (ZXing) from Google Play<br>
-            2. Click SCAN button below<br>
-            3. Allow camera access when prompted
-        </div>
-        
-        <!-- Main Scanner Button - Now triggers ZXing app -->
-        <a class="button" href="#" onclick="openZXingScanner(); return false;">
-            📷 SCAN WITH ZXING APP
-        </a>
-        
-        <!-- Alternative manual scan -->
-        <button class="button" onclick="useManualEntry()">
-            ⌨️ MANUAL ENTRY
-        </button>
-        
-        <!-- Barcode Display -->
-        <div class="section">
-            <div class="section-title">Current Barcode:</div>
-            <div class="barcode-display" id="barcodeDisplay">
-                _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
-            </div>
-            
-            <!-- Visual grid -->
-            <div id="barcodeGrid" class="grid-row"></div>
-        </div>
-        
-        <!-- Manual Input (hidden by default) -->
-        <input type="text" class="manual-input" id="manualInput" 
-               onchange="handleManualInput(this.value)" 
-               placeholder="Type barcode here" maxlength="39">
-        
-        <!-- Label Display -->
-        <div class="section">
-            <div class="section-title">Label ID:</div>
-            <div class="label-display" id="labelDisplay">
-                No barcode scanned yet
-            </div>
-        </div>
-        
-        <!-- Action Buttons -->
-        <div class="button-group">
-            <button class="button" onclick="clearBarcode()">CLEAR</button>
-            <button class="button" onclick="submitBarcode()">SUBMIT</button>
-        </div>
-        
-        <!-- Simple Keypad -->
-        <table class="keypad">
-            <tr class="keypad-row">
-                <td class="key" onclick="addChar('1')">1</td>
-                <td class="key" onclick="addChar('2')">2</td>
-                <td class="key" onclick="addChar('3')">3</td>
-            </tr>
-            <tr class="keypad-row">
-                <td class="key" onclick="addChar('4')">4</td>
-                <td class="key" onclick="addChar('5')">5</td>
-                <td class="key" onclick="addChar('6')">6</td>
-            </tr>
-            <tr class="keypad-row">
-                <td class="key" onclick="addChar('7')">7</td>
-                <td class="key" onclick="addChar('8')">8</td>
-                <td class="key" onclick="addChar('9')">9</td>
-            </tr>
-            <tr class="keypad-row">
-                <td class="key special-key" onclick="addChar('0')">0</td>
-                <td class="key special-key" onclick="deleteChar()">DEL</td>
-                <td class="key special-key" onclick="submitBarcode()">ENTER</td>
-            </tr>
-        </table>
-        
-        <!-- Status Bar -->
-        <div class="status-bar" id="statusBar">
-            Ready | Scan count: <span id="scanCount">0</span>
-        </div>
-    </div>
-    
-    <!-- ETA Modal -->
-    <div class="modal" id="etaModal">
-        <div class="modal-content">
-            <div class="modal-header">SET ESTIMATED TIME</div>
-            <div class="modal-body">
-                <div>Date (YYYY-MM-DD):</div>
-                <input type="text" id="etaDate" placeholder="2024-01-15">
-                
-                <div>Time (HH:MM):</div>
-                <input type="text" id="etaTime" placeholder="14:30">
-                
-                <div class="button-group">
-                    <button class="button" onclick="closeModal('etaModal')">CANCEL</button>
-                    <button class="button" onclick="submitETA()">SET ETA</button>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Confirmation Modal -->
-    <div class="modal" id="confirmationModal">
-        <div class="modal-content">
-            <div class="modal-header">SELECT EVENT</div>
-            <div class="modal-body">
-                <select id="eventSelect" size="8" style="width: 100%; height: 150px; margin: 10px 0;">
-                    <option value="1">1 - DATA RECEIVED</option>
-                    <option value="2">2 - PICKED UP</option>
-                    <option value="3">3 - DEPARTED POST OFFICE</option>
-                    <option value="4">4 - ARRIVAL SCAN</option>
-                    <option value="5">5 - DEPART SCAN</option>
-                    <option value="6">6 - LOCAL SCAN</option>
-                    <option value="7">7 - OUT FOR DELIVERY</option>
-                    <option value="8">8 - DELIVERED</option>
-                </select>
-                <div class="button-group">
-                    <button class="button" onclick="closeModal('confirmationModal')">CANCEL</button>
-                    <button class="button" onclick="submitConfirmation()">SUBMIT</button>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Signature Modal -->
-    <div class="modal" id="signatureModal">
-        <div class="modal-content">
-            <div class="modal-header">SIGNATURE REQUIRED</div>
-            <div class="modal-body">
-                <div>Printed Name:</div>
-                <input type="text" id="printedName" placeholder="Customer Name">
-                
-                <div>Signature (text):</div>
-                <input type="text" id="signatureText" placeholder="Type name as signature">
-                
-                <div>Address:</div>
-                <textarea id="address" placeholder="Customer address"></textarea>
-                
-                <div class="button-group">
-                    <button class="button" onclick="closeModal('signatureModal')">CANCEL</button>
-                    <button class="button" onclick="submitSignature()">SUBMIT</button>
-                </div>
-            </div>
-        </div>
-    </div>
+
+<div class="container">
+
+<div class="header">
+    DashGo Logon POD
+</div>
+
+<hr>
+
+<!-- LOGIN -->
+<div id="loginBox">
+    <label>CID</label>
+    <input type="text" id="cid">
+
+    <label>PID</label>
+    <input type="text" id="pid">
+
+    <button onclick="logon()">LOGON</button>
+    <div id="loginMsg" class="msg"></div>
+</div>
+
+<!-- PICKUP CONFIRM -->
+<div id="pickupBox" class="hidden">
+
+    <label>Confirm Tracking ID</label>
+    <input type="text" id="trk">
+
+    <label>Date / Time</label>
+    <input type="text" id="dt" readonly>
+
+    <label>Location</label>
+    <input type="text" id="loc">
+
+    <label>Status</label>
+    <select id="status">
+        <option>ITEM DATA RECEIVED</option>
+        <option>ITEM HANDED TO COURIER</option>
+        <option>ITEM SCANNED AT UNLOAD HUB</option>
+        <option>ITEM PROCESSED</option>
+        <option>ITEM MOVING THRU NETWORK</option>
+        <option>ITEM DEPARTED HUB</option>
+        <option>ITEM EN ROUTE</option>
+        <option>ITEM DELAYED</option>
+        <option>ITEM SCANNED AT LOCAL UNLOAD HUB</option>
+        <option>ITEM PROCESSED WITH LOAD HUB</option>
+        <option>ITEM OUT FOR DELIVERY</option>
+        <option>ITEM DELIVERED</option>
+    </select>
+
+    <button onclick="submitPickup()">CONFIRM PICKUP</button>
+    <div id="pickupMsg" class="msg"></div>
+
+</div>
+
+</div>
 
 <script>
-    // Google Apps Script URL
-    var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyduzDUTA_wYIMBoLlOHI3W2xK5XpxEyilEYSMUSxDzAcO4qjjf_CChmCIdKNeHIemN/exec';
-    
-    // Global variables
-    var barcode = "";
-    var scanCount = 0;
-    var currentEvent = "";
-    var currentETA = "";
-    
-    // Initialize display
-    function initDisplay() {
-        updateBarcodeDisplay();
-        updateStatus();
+var CID="";
+var PID="";
+
+function setDT(){
+    var d=new Date();
+    document.getElementById("dt").value=
+        d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate()+" "+
+        d.getHours()+":"+d.getMinutes()+":"+d.getSeconds();
+}
+
+function logon(){
+    CID=document.getElementById("cid").value;
+    PID=document.getElementById("pid").value;
+
+    if(CID==""||PID==""){
+        alert("CID / PID REQUIRED");
+        return;
     }
-    
-    // Open ZXing Barcode Scanner app
-    function openZXingScanner() {
-        // Different intent formats for different ZXing versions
-        var intents = [
-            // Standard ZXing intent
-            'intent://scan/#Intent;scheme=zxing;package=com.google.zxing.client.android;end',
-            
-            // Alternative ZXing intent
-            'intent://scan/#Intent;scheme=zxing;package=com.google.zxing.client.android;S.browser_fallback_url=https%3A%2F%2Fplay.google.com%2Fstore%2Fapps%2Fdetails%3Fid%3Dcom.google.zxing.client.android;end',
-            
-            // Direct market link
-            'market://details?id=com.google.zxing.client.android'
-        ];
-        
-        // Try different methods
-        tryZXingIntent(0);
-        
-        function tryZXingIntent(index) {
-            if (index >= intents.length) {
-                // All intents failed, show manual entry
-                showMessage("ZXing not available. Using manual entry.");
-                useManualEntry();
-                return;
-            }
-            
-            var iframe = document.createElement('iframe');
-            iframe.style.display = 'none';
-            iframe.src = intents[index];
-            document.body.appendChild(iframe);
-            
-            // Check if app opened (this is tricky on old browsers)
-            setTimeout(function() {
-                document.body.removeChild(iframe);
-                
-                // If we're still here after 2 seconds, try next intent
-                if (index < intents.length - 1) {
-                    setTimeout(function() {
-                        tryZXingIntent(index + 1);
-                    }, 2000);
-                } else {
-                    // Last resort: open download page
-                    window.open('https://play.google.com/store/apps/details?id=com.google.zxing.client.android', '_blank');
-                    useManualEntry();
-                }
-            }, 100);
-        }
-        
-        // Also set up a listener for when we return from ZXing
-        // ZXing can return results via URL parameters or localStorage
-        setupZXingReturnListener();
-    }
-    
-    // Listen for ZXing results (when app returns to browser)
-    function setupZXingReturnListener() {
-        // Check URL parameters for scan result
-        var urlParams = getUrlParams();
-        if (urlParams.scan_result || urlParams.result) {
-            var result = urlParams.scan_result || urlParams.result;
-            handleScanResult(result);
-        }
-        
-        // Also check localStorage (ZXing might write here)
-        if (typeof localStorage !== 'undefined') {
-            var storedResult = localStorage.getItem('zxing_scan_result');
-            if (storedResult) {
-                handleScanResult(storedResult);
-                localStorage.removeItem('zxing_scan_result');
+
+    var xhr=new XMLHttpRequest();
+    xhr.open("POST","YOUR_APPS_SCRIPT_URL",true);
+    xhr.setRequestHeader("Content-Type","application/x-www-form-urlencoded");
+
+    xhr.onreadystatechange=function(){
+        if(xhr.readyState==4){
+            if(xhr.responseText=="OK"){
+                document.getElementById("loginBox").style.display="none";
+                document.getElementById("pickupBox").style.display="block";
+                setDT();
+            }else{
+                document.getElementById("loginMsg").innerHTML="INVALID LOGIN";
             }
         }
-        
-        // Set up polling for ZXing result
-        var pollInterval = setInterval(function() {
-            if (typeof localStorage !== 'undefined') {
-                var result = localStorage.getItem('zxing_last_scan');
-                if (result) {
-                    handleScanResult(result);
-                    localStorage.removeItem('zxing_last_scan');
-                    clearInterval(pollInterval);
-                }
-            }
-        }, 1000);
-        
-        // Clear after 30 seconds
-        setTimeout(function() {
-            clearInterval(pollInterval);
-        }, 30000);
-    }
-    
-    // Handle scan result from ZXing
-    function handleScanResult(result) {
-        if (!result) return;
-        
-        // Clean the result
-        result = result.toString().trim();
-        
-        // Remove any non-alphanumeric characters except dash
-        result = result.replace(/[^a-zA-Z0-9\-]/g, '');
-        
-        if (result.length > 0 && result.length <= 39) {
-            barcode = result;
-            updateBarcodeDisplay();
-            showMessage("Scanned: " + result);
-            
-            // Auto-submit after 1 second
-            setTimeout(function() {
-                submitBarcode();
-            }, 1000);
-        } else if (result.length > 39) {
-            showMessage("Barcode too long (max 39 chars)");
-        }
-    }
-    
-    // Use manual entry
-    function useManualEntry() {
-        var manualInput = document.getElementById('manualInput');
-        manualInput.style.display = 'block';
-        manualInput.focus();
-        manualInput.select();
-    }
-    
-    // Handle manual input
-    function handleManualInput(value) {
-        if (value && value.trim()) {
-            barcode = value.trim();
-            updateBarcodeDisplay();
-            document.getElementById('manualInput').style.display = 'none';
-            document.getElementById('manualInput').value = '';
-            
-            // Auto-submit
-            setTimeout(function() {
-                submitBarcode();
-            }, 500);
-        }
-    }
-    
-    // Add character to barcode
-    function addChar(char) {
-        if (barcode.length < 39) {
-            barcode += char;
-            updateBarcodeDisplay();
-        }
-    }
-    
-    // Delete last character
-    function deleteChar() {
-        if (barcode.length > 0) {
-            barcode = barcode.substring(0, barcode.length - 1);
-            updateBarcodeDisplay();
-        }
-    }
-    
-    // Clear barcode
-    function clearBarcode() {
-        barcode = "";
-        updateBarcodeDisplay();
-        showMessage("Cleared");
-    }
-    
-    // Update barcode display
-    function updateBarcodeDisplay() {
-        var display = document.getElementById('barcodeDisplay');
-        var grid = document.getElementById('barcodeGrid');
-        
-        // Update text display
-        if (barcode.length === 0) {
-            display.innerHTML = '_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _';
-            display.className = 'barcode-display';
-        } else {
-            display.textContent = barcode;
-            display.className = 'barcode-display active';
-        }
-        
-        // Update visual grid
-        grid.innerHTML = '';
-        for (var i = 0; i < 39; i++) {
-            var cell = document.createElement('div');
-            cell.className = 'grid-cell';
-            
-            if (i < barcode.length) {
-                cell.textContent = barcode.charAt(i);
-                cell.className = 'grid-cell active';
-            } else if (i === barcode.length) {
-                cell.textContent = '_';
-                cell.className = 'grid-cell cursor';
-            }
-            
-            grid.appendChild(cell);
-        }
-        
-        // Update status
-        updateStatus();
-    }
-    
-    // Update status bar
-    function updateStatus() {
-        var status = "Ready";
-        if (barcode.length > 0) {
-            status = "Barcode: " + barcode.length + "/39 chars";
-        }
-        document.getElementById('statusBar').innerHTML = 
-            status + ' | Scan count: <span id="scanCount">' + scanCount + '</span>';
-    }
-    
-    // Submit barcode
-    function submitBarcode() {
-        if (!barcode || barcode.length === 0) {
-            showMessage("Please enter a barcode first");
-            return;
-        }
-        
-        scanCount++;
-        document.getElementById('scanCount').textContent = scanCount;
-        
-        // Update label display
-        document.getElementById('labelDisplay').textContent = 
-            'Scan #' + scanCount + ' | ' + barcode;
-        
-        showMessage("Submitted: " + barcode);
-        
-        // Save to Google Sheets
-        saveToGoogleSheets('scan', {
-            barcode: barcode,
-            count: scanCount,
-            timestamp: new Date().toISOString()
-        });
-        
-        // Open ETA modal
-        setTimeout(function() {
-            openETAModal();
-        }, 500);
-    }
-    
-    // Open ETA modal
-    function openETAModal() {
-        // Set default date and time
-        var now = new Date();
-        var dateStr = now.getFullYear() + '-' + 
-                     pad(now.getMonth() + 1) + '-' + 
-                     pad(now.getDate());
-        var timeStr = pad(now.getHours()) + ':' + 
-                     pad(now.getMinutes());
-        
-        document.getElementById('etaDate').value = dateStr;
-        document.getElementById('etaTime').value = timeStr;
-        
-        openModal('etaModal');
-    }
-    
-    // Submit ETA
-    function submitETA() {
-        var date = document.getElementById('etaDate').value;
-        var time = document.getElementById('etaTime').value;
-        
-        if (!date || !time) {
-            showMessage("Please enter both date and time");
-            return;
-        }
-        
-        currentETA = date + ' ' + time;
-        showMessage("ETA set: " + currentETA);
-        
-        // Save ETA to Google Sheets
-        saveToGoogleSheets('eta', {
-            barcode: barcode,
-            eta: currentETA
-        });
-        
-        closeModal('etaModal');
-        
-        // Open confirmation modal
-        setTimeout(function() {
-            openModal('confirmationModal');
-        }, 500);
-    }
-    
-    // Submit confirmation
-    function submitConfirmation() {
-        var select = document.getElementById('eventSelect');
-        var selectedIndex = select.selectedIndex;
-        
-        if (selectedIndex < 0) {
-            showMessage("Please select an event");
-            return;
-        }
-        
-        var selectedValue = select.options[selectedIndex].value;
-        var selectedText = select.options[selectedIndex].text;
-        
-        currentEvent = selectedValue;
-        showMessage("Event selected: " + selectedText);
-        
-        // Save confirmation to Google Sheets
-        saveToGoogleSheets('confirmation', {
-            barcode: barcode,
-            event: selectedValue,
-            event_text: selectedText,
-            eta: currentETA
-        });
-        
-        closeModal('confirmationModal');
-        
-        // Check if signature is needed
-        if (barcode.startsWith('700') && (selectedValue === '1' || selectedValue === '8')) {
-            setTimeout(function() {
-                openModal('signatureModal');
-            }, 500);
-        } else {
-            // Reset for next scan
-            setTimeout(function() {
-                barcode = "";
-                updateBarcodeDisplay();
-                showMessage("Ready for next scan");
-            }, 1000);
-        }
-    }
-    
-    // Submit signature
-    function submitSignature() {
-        var printedName = document.getElementById('printedName').value;
-        var signature = document.getElementById('signatureText').value;
-        var address = document.getElementById('address').value;
-        
-        if (!printedName || printedName.trim() === '') {
-            showMessage("Please enter printed name");
-            return;
-        }
-        
-        // Save signature to Google Sheets
-        saveToGoogleSheets('signature', {
-            barcode: barcode,
-            printed_name: printedName,
-            signature: signature,
-            address: address,
-            event: currentEvent
-        });
-        
-        showMessage("Signature submitted");
-        
-        closeModal('signatureModal');
-        
-        // Reset for next scan
-        setTimeout(function() {
-            barcode = "";
-            updateBarcodeDisplay();
-            document.getElementById('printedName').value = '';
-            document.getElementById('signatureText').value = '';
-            document.getElementById('address').value = '';
-            showMessage("Ready for next scan");
-        }, 1000);
-    }
-    
-    // Save data to Google Sheets
-    function saveToGoogleSheets(action, data) {
-        var xhr = new XMLHttpRequest();
-        var formData = new FormData();
-        
-        // Add action and data
-        formData.append('action', action);
-        for (var key in data) {
-            if (data.hasOwnProperty(key)) {
-                formData.append(key, data[key]);
-            }
-        }
-        
-        // Try to send
-        try {
-            xhr.open('POST', SCRIPT_URL, true);
-            xhr.onreadystatechange = function() {
-                if (xhr.readyState === 4) {
-                    if (xhr.status === 200) {
-                        console.log('Data saved to Google Sheets');
-                    } else {
-                        console.log('Offline - data queued for later');
-                        // Store locally for later sync
-                        queueDataForSync(action, data);
-                    }
-                }
-            };
-            xhr.send(formData);
-        } catch (e) {
-            console.log('Error sending data: ' + e);
-            queueDataForSync(action, data);
-        }
-    }
-    
-    // Queue data for later sync
-    function queueDataForSync(action, data) {
-        try {
-            if (typeof localStorage !== 'undefined') {
-                var queue = JSON.parse(localStorage.getItem('sync_queue') || '[]');
-                queue.push({
-                    action: action,
-                    data: data,
-                    timestamp: new Date().toISOString()
-                });
-                localStorage.setItem('sync_queue', JSON.stringify(queue));
-                showMessage("Data queued (offline mode)");
-            }
-        } catch (e) {
-            // Ignore errors
-        }
-    }
-    
-    // Try to sync queued data
-    function syncQueuedData() {
-        try {
-            if (typeof localStorage !== 'undefined') {
-                var queue = JSON.parse(localStorage.getItem('sync_queue') || '[]');
-                if (queue.length > 0) {
-                    showMessage("Syncing " + queue.length + " queued items...");
-                    
-                    // Try to send each item
-                    for (var i = 0; i < queue.length; i++) {
-                        saveToGoogleSheets(queue[i].action, queue[i].data);
-                    }
-                    
-                    // Clear queue after sending
-                    localStorage.removeItem('sync_queue');
-                    showMessage("Sync complete");
-                }
-            }
-        } catch (e) {
-            // Ignore errors
-        }
-    }
-    
-    // Show message
-    function showMessage(message) {
-        var statusBar = document.getElementById('statusBar');
-        var originalHTML = statusBar.innerHTML;
-        
-        statusBar.innerHTML = message;
-        statusBar.style.color = '#ff8c00';
-        
-        setTimeout(function() {
-            statusBar.innerHTML = originalHTML;
-            statusBar.style.color = '#aaa';
-        }, 3000);
-    }
-    
-    // Open modal
-    function openModal(modalId) {
-        document.getElementById(modalId).style.display = 'block';
-    }
-    
-    // Close modal
-    function closeModal(modalId) {
-        document.getElementById(modalId).style.display = 'none';
-    }
-    
-    // Get URL parameters
-    function getUrlParams() {
-        var params = {};
-        var query = window.location.search.substring(1);
-        var vars = query.split('&');
-        
-        for (var i = 0; i < vars.length; i++) {
-            var pair = vars[i].split('=');
-            if (pair.length === 2) {
-                params[decodeURIComponent(pair[0])] = decodeURIComponent(pair[1]);
-            }
-        }
-        
-        return params;
-    }
-    
-    // Pad number with leading zero
-    function pad(num) {
-        return (num < 10 ? '0' : '') + num;
-    }
-    
-    // Initialize
-    window.onload = function() {
-        initDisplay();
-        
-        // Try to sync any queued data
-        setTimeout(syncQueuedData, 1000);
-        
-        // Set up keyboard shortcuts
-        document.onkeydown = function(e) {
-            var key = e.keyCode || e.which;
-            
-            // ESC to clear
-            if (key === 27) {
-                clearBarcode();
-                e.preventDefault();
-            }
-            // Enter to submit
-            else if (key === 13) {
-                submitBarcode();
-                e.preventDefault();
-            }
-            // F2 for manual entry
-            else if (key === 113) {
-                useManualEntry();
-                e.preventDefault();
-            }
-            // F5 for ZXing scanner
-            else if (key === 116) {
-                openZXingScanner();
-                e.preventDefault();
-            }
-            // Numbers 0-9
-            else if (key >= 48 && key <= 57) {
-                addChar(String.fromCharCode(key));
-                e.preventDefault();
-            }
-            // Backspace/Delete
-            else if (key === 8 || key === 46) {
-                deleteChar();
-                e.preventDefault();
-            }
-        };
-        
-        // Check for ZXing result on page load
-        setupZXingReturnListener();
-        
-        // Test connection
-        testConnection();
     };
-    
-    // Test connection to Google Sheets
-    function testConnection() {
-        var xhr = new XMLHttpRequest();
-        xhr.open('GET', SCRIPT_URL + '?test=1', true);
-        xhr.timeout = 5000;
-        
-        xhr.onreadystatechange = function() {
-            if (xhr.readyState === 4) {
-                if (xhr.status === 200) {
-                    showMessage("Connected to server");
-                } else {
-                    showMessage("Working offline - data will be queued");
-                }
-            }
-        };
-        
-        xhr.send();
+
+    xhr.send("action=login&cid="+encodeURIComponent(CID)+"&pid="+encodeURIComponent(PID));
+}
+
+function submitPickup(){
+
+    setDT();
+
+    var trk=document.getElementById("trk").value;
+    var loc=document.getElementById("loc").value;
+    var status=document.getElementById("status").value;
+
+    if(trk==""){
+        alert("TRACKING REQUIRED");
+        return;
     }
-    
-    // For Windows CE devices with physical scanners
-    // Physical scanners usually act as keyboard input
-    // This captures all input for barcode scanning
-    var barcodeBuffer = "";
-    var barcodeTimeout;
-    
-    document.onkeypress = function(e) {
-        var char = String.fromCharCode(e.which || e.keyCode);
-        
-        // Check if this is likely a barcode scanner input
-        // Scanners usually send characters quickly
-        barcodeBuffer += char;
-        
-        clearTimeout(barcodeTimeout);
-        barcodeTimeout = setTimeout(function() {
-            if (barcodeBuffer.length >= 3) {
-                // Likely a barcode from scanner
-                barcode = barcodeBuffer;
-                updateBarcodeDisplay();
-                
-                // Auto-submit
-                setTimeout(function() {
-                    submitBarcode();
-                }, 100);
-            }
-            barcodeBuffer = "";
-        }, 50);
+
+    var data=
+        "action=pickup"+
+        "&cid="+encodeURIComponent(CID)+
+        "&pid="+encodeURIComponent(PID)+
+        "&trk="+encodeURIComponent(trk)+
+        "&dt="+encodeURIComponent(document.getElementById("dt").value)+
+        "&loc="+encodeURIComponent(loc)+
+        "&status="+encodeURIComponent(status);
+
+    var xhr=new XMLHttpRequest();
+    xhr.open("POST","https://script.google.com/macros/s/AKfycbzgBEwDq1Hwl1weE2YbjHgeHhv3GdELuVkRpGYwwrZ4VQo0V5KQtDLmnFSyIRpr5fwI/exec",true);
+    xhr.setRequestHeader("Content-Type","application/x-www-form-urlencoded");
+
+    xhr.onreadystatechange=function(){
+        if(xhr.readyState==4){
+            document.getElementById("pickupMsg").innerHTML=xhr.responseText;
+        }
     };
+
+    xhr.send(data);
+}
 </script>
+
 </body>
 </html>
