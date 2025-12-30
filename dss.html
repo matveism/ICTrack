@@ -18,8 +18,24 @@ body{
 .header{text-align:center;}
 hr{border:0;border-top:1px dashed #00ff00;margin:10px 0;}
 label{display:block;margin-top:8px;}
-input,select,button,textarea{
-    width:100%;
+
+.input-wrap{
+    display:flex;
+    gap:4px;
+}
+
+.input-wrap input{
+    flex:1;
+}
+
+.scan-btn{
+    width:36px;
+    padding:0;
+    font-size:14px;
+    cursor:pointer;
+}
+
+input,select,button{
     background:#000;
     color:#00ff00;
     border:1px solid #00ff00;
@@ -29,10 +45,10 @@ input,select,button,textarea{
     padding:4px;
     margin-top:4px;
 }
+
 button{margin-top:10px;}
 .hidden{display:none;}
 .msg{margin-top:8px;font-size:11px;}
-canvas{border:1px solid #00ff00;margin-top:4px;}
 </style>
 </head>
 
@@ -46,8 +62,10 @@ canvas{border:1px solid #00ff00;margin-top:4px;}
 <div id="loginBox">
     <label>CID</label>
     <input type="text" id="cid">
+
     <label>PID</label>
     <input type="text" id="pid">
+
     <button onclick="logon()">LOGON</button>
     <div id="loginMsg" class="msg"></div>
 </div>
@@ -55,7 +73,10 @@ canvas{border:1px solid #00ff00;margin-top:4px;}
 <div id="pickupBox" class="hidden">
 
     <label>Confirm Tracking ID</label>
-    <input type="text" id="trk" oninput="checkSignatureField()">
+    <div class="input-wrap">
+        <input type="text" id="trk" oninput="checkInitialsField()">
+        <button class="scan-btn" onclick="scanBarcode()">📷</button>
+    </div>
 
     <label>Date / Time</label>
     <input type="text" id="dt" readonly>
@@ -64,7 +85,7 @@ canvas{border:1px solid #00ff00;margin-top:4px;}
     <input type="text" id="loc">
 
     <label>Status</label>
-    <select id="status" onchange="checkSignatureField()">
+    <select id="status" onchange="checkInitialsField()">
         <option>ITEM DATA RECEIVED</option>
         <option>ITEM HANDED TO COURIER</option>
         <option>ITEM SCANNED AT UNLOAD HUB</option>
@@ -79,11 +100,9 @@ canvas{border:1px solid #00ff00;margin-top:4px;}
         <option>ITEM DELIVERED</option>
     </select>
 
-    <!-- Signature Field -->
-    <div id="sigBox" class="hidden">
-        <label>Signature (Required)</label>
-        <canvas id="signature" width="240" height="100"></canvas>
-        <button onclick="clearSig()">CLEAR SIGNATURE</button>
+    <div id="initBox" class="hidden">
+        <label>Recipient Initials (Required)</label>
+        <input type="text" id="initials" maxlength="4" placeholder="e.g. JS">
     </div>
 
     <button onclick="submitPickup()">CONFIRM PICKUP</button>
@@ -96,18 +115,38 @@ canvas{border:1px solid #00ff00;margin-top:4px;}
 var CID="",PID="";
 var URL="https://script.google.com/macros/s/AKfycbzgBEwDq1Hwl1weE2YbjHgeHhv3GdELuVkRpGYwwrZ4VQo0V5KQtDLmnFSyIRpr5fwI/exec";
 
-// Date/time
+// ZXing Scan
+function scanBarcode(){
+    window.location.href =
+        "zxing://scan?ret=" +
+        encodeURIComponent(window.location.href + "?SCAN_RESULT={CODE}");
+}
+
+// Capture ZXing result
+(function(){
+    var params = window.location.search;
+    if(params.indexOf("SCAN_RESULT=") !== -1){
+        var code = params.split("SCAN_RESULT=")[1];
+        code = decodeURIComponent(code.replace(/\+/g," "));
+        document.getElementById("trk").value = code;
+        checkInitialsField();
+        history.replaceState(null,null,window.location.pathname);
+    }
+})();
+
+// Date / Time
 function dt(){
     var d=new Date();
-    document.getElementById("dt").value=
-    d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate()+" "+
-    d.getHours()+":"+d.getMinutes()+":"+d.getSeconds();
+    document.getElementById("dt").value =
+        d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate()+" "+
+        d.getHours()+":"+d.getMinutes()+":"+d.getSeconds();
 }
 
 // Logon
 function logon(){
-    CID=document.getElementById("cid").value;
-    PID=document.getElementById("pid").value;
+    CID=document.getElementById("cid").value.trim();
+    PID=document.getElementById("pid").value.trim();
+
     if(CID==""||PID==""){alert("CID / PID REQUIRED");return;}
 
     var x=new XMLHttpRequest();
@@ -127,66 +166,34 @@ function logon(){
     x.send("action=login&cid="+encodeURIComponent(CID)+"&pid="+encodeURIComponent(PID));
 }
 
-// Signature logic
-var canvas=document.getElementById("signature");
-var ctx=canvas.getContext("2d");
-var drawing=false;
-var hasSigned=false;
-
-canvas.addEventListener('mousedown', function(e){
-    drawing = true; 
-    ctx.moveTo(e.offsetX,e.offsetY);
-    hasSigned = true;
-});
-canvas.addEventListener('mouseup', function(e){drawing=false;});
-canvas.addEventListener('mousemove', function(e){
-    if(drawing){ctx.lineTo(e.offsetX,e.offsetY); ctx.strokeStyle="#00ff00"; ctx.stroke();}
-});
-
-canvas.addEventListener('touchstart', function(e){
-    drawing = true; 
-    var t=e.touches[0]; 
-    ctx.moveTo(t.pageX-canvas.offsetLeft,t.pageY-canvas.offsetTop);
-    hasSigned = true;
-});
-canvas.addEventListener('touchend', function(e){drawing=false;});
-canvas.addEventListener('touchmove', function(e){
-    e.preventDefault(); 
-    if(drawing){
-        var t=e.touches[0]; 
-        ctx.lineTo(t.pageX-canvas.offsetLeft,t.pageY-canvas.offsetTop); 
-        ctx.stroke();
-    }
-});
-
-function clearSig(){
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-    hasSigned=false;
-}
-
-// Show signature field conditionally
-function checkSignatureField(){
+// Initials logic
+function checkInitialsField(){
     var trk=document.getElementById("trk").value;
     var status=document.getElementById("status").value;
-    if(status=="ITEM DELIVERED" && /^I.*75$/.test(trk)){
-        document.getElementById("sigBox").style.display="block";
+
+    if(status==="ITEM DELIVERED" && /^I.*75$/.test(trk)){
+        document.getElementById("initBox").style.display="block";
     }else{
-        document.getElementById("sigBox").style.display="none";
-        clearSig();
+        document.getElementById("initBox").style.display="none";
+        document.getElementById("initials").value="";
     }
 }
 
-// Submit pickup
+// Submit
 function submitPickup(){
     dt();
-    var trk=document.getElementById("trk").value;
+
+    var trk=document.getElementById("trk").value.trim();
     var status=document.getElementById("status").value;
+    var initials=document.getElementById("initials").value.trim().toUpperCase();
 
     if(trk==""){alert("TRACKING REQUIRED");return;}
-    
-    // Require signature if conditions met
-    if(status=="ITEM DELIVERED" && /^I.*75$/.test(trk)){
-        if(!hasSigned){alert("SIGNATURE REQUIRED"); return;}
+
+    if(status==="ITEM DELIVERED" && /^I.*75$/.test(trk)){
+        if(!/^[A-Z]{1,4}$/.test(initials)){
+            alert("VALID INITIALS REQUIRED");
+            return;
+        }
     }
 
     var x=new XMLHttpRequest();
@@ -203,10 +210,10 @@ function submitPickup(){
         "&cid="+encodeURIComponent(CID)+
         "&pid="+encodeURIComponent(PID)+
         "&trk="+encodeURIComponent(trk)+
-        "&dt="+encodeURIComponent(document.getElementById("dt").value)+
-        "&loc="+encodeURIComponent(document.getElementById("loc").value)+
+        "&dt="+encodeURIComponent(dt.value)+
+        "&loc="+encodeURIComponent(loc.value)+
         "&status="+encodeURIComponent(status)+
-        "&signature="+encodeURIComponent(canvas.toDataURL())
+        "&initials="+encodeURIComponent(initials)
     );
 }
 </script>
