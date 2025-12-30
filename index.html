@@ -1,90 +1,120 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="UTF-8">
-<title>DashGo POD</title>
+<meta charset="utf-8">
+<title>Track</title>
+<meta name="viewport" content="width=device-width">
+
 <style>
-body{background:#000;color:#0f0;font-family:monospace;font-size:12px;font-weight:bold;padding:10px;}
-.container{max-width:260px;margin:0 auto;}
-hr{border:0;border-top:1px dashed #0f0;margin:10px 0;}
-input,select,button{width:100%;background:#000;color:#0f0;border:1px solid #0f0;font-family:monospace;font-size:12px;font-weight:bold;padding:4px;margin-top:6px;}
-.hidden{display:none;}
+body {
+    background-color: #c0c0c0;
+    font-family: monospace;
+    font-weight: bold;
+    margin: 0;
+    padding: 0;
+}
+
+/* SAFE WIDTH FOR 2.6" */
+.container {
+    width: 240px;
+    margin: 0 auto;
+    border: 2px solid #000;
+    background-color: #e0e0e0;
+}
+
+/* TITLE BAR */
+.titlebar {
+    background-color: #000080;
+    color: #ffffff;
+    padding: 4px;
+    font-size: 12px;
+}
+
+/* CONTENT */
+.content {
+    padding: 6px;
+}
+
+/* LABEL */
+.label {
+    font-size: 11px;
+    color: #003300;
+    margin-top: 4px;
+}
+
+/* INPUT + BUTTON */
+input, button {
+    width: 100%;
+    box-sizing: border-box;
+    font-family: monospace;
+    font-weight: bold;
+    font-size: 12px;
+    background-color: #ffffff;
+    color: #003300;
+    border: 2px solid #000;
+    padding: 4px;
+    margin-top: 3px;
+}
+
+/* BUTTON LOOK */
+button {
+    background-color: #d4d0c8;
+}
+
+/* OUTPUT TERMINAL */
+.output {
+    background-color: #000000;
+    color: #00ff00;
+    border: 2px inset #808080;
+    padding: 4px;
+    margin-top: 6px;
+    font-size: 11px;
+    white-space: pre-wrap;
+}
 </style>
 </head>
+
 <body>
 
 <div class="container">
-<div style="text-align:center">DashGo Logon POD</div>
-<hr>
 
-<!-- LOGIN -->
-<div id="loginBox">
-<label>CID</label><input type="text" id="cidInput">
-<label>PID</label><input type="text" id="pidInput">
-<button onclick="login()">LOGON</button>
-<div id="loginMsg"></div>
+<div class="titlebar">TRACK PACKAGE</div>
+
+<div class="content">
+
+<div class="label">TRK (4 DIGITS)</div>
+<input id="trk" maxlength="4">
+
+<button onclick="go()">TRACK</button>
+
+<div class="output" id="out">
+READY
 </div>
 
-<!-- PICKUP -->
-<div id="pickupBox" class="hidden">
-<form id="pickupForm" method="POST" enctype="multipart/form-data" action="https://script.google.com/macros/s/AKfycbzgBEwDq1Hwl1weE2YbjHgeHhv3GdELuVkRpGYwwrZ4VQo0V5KQtDLmnFSyIRpr5fwI/exec">
-<input type="hidden" name="action" value="pickup">
-<input type="hidden" name="cid" id="cid">
-<input type="hidden" name="pid" id="pid">
-<input type="hidden" name="dt" id="dt">
-
-<label>Tracking ID (auto-filled)</label>
-<input type="text" name="trk" id="trk">
-
-<label>Location</label>
-<input type="text" name="loc">
-
-<label>Status</label>
-<select name="status">
-<option>ITEM DATA RECEIVED</option>
-<option>ITEM HANDED TO COURIER</option>
-<option>ITEM SCANNED AT UNLOAD HUB</option>
-<option>ITEM PROCESSED</option>
-<option>ITEM MOVING THRU NETWORK</option>
-<option>ITEM DEPARTED HUB</option>
-<option>ITEM EN ROUTE</option>
-<option>ITEM DELAYED</option>
-<option>ITEM SCANNED AT LOCAL UNLOAD HUB</option>
-<option>ITEM PROCESSED WITH LOAD HUB</option>
-<option>ITEM OUT FOR DELIVERY</option>
-<option>ITEM DELIVERED</option>
-</select>
-
-<label>Photo of Shipping Label</label>
-<input type="file" name="file">
-
-<button type="submit">CONFIRM PICKUP</button>
-</form>
-<div id="pickupMsg"></div>
 </div>
-
 </div>
 
 <script>
-function login(){
-  var cid=document.getElementById('cidInput').value;
-  var pid=document.getElementById('pidInput').value;
-  if(cid===""||pid===""){alert("CID/PID required");return;}
-  var xhr=new XMLHttpRequest();
-  xhr.open("POST","https://script.google.com/macros/s/AKfycbzgBEwDq1Hwl1weE2YbjHgeHhv3GdELuVkRpGYwwrZ4VQo0V5KQtDLmnFSyIRpr5fwI/exec",true);
-  xhr.setRequestHeader("Content-Type","application/x-www-form-urlencoded");
-  xhr.onload=function(){
-    if(xhr.responseText==="OK"){
-      document.getElementById('loginBox').style.display="none";
-      document.getElementById('pickupBox').style.display="block";
-      document.getElementById('cid').value=cid;
-      document.getElementById('pid').value=pid;
-      document.getElementById('dt').value=new Date().toISOString().slice(0,19).replace('T',' ');
-    }else{
-      document.getElementById('loginMsg').innerText="INVALID LOGIN";
+var API = "https://script.google.com/macros/s/AKfycbyuNEpOksgP5xs_wdTBBv3MLPle_dFltxLhYI3F1ieVl97oQLZ-b7ZrGYklCh1FYKLnNA/exec";
+
+function go() {
+    if (trk.value == "") {
+        alert("Enter TRK");
+        return;
     }
-  };
-  xhr.send("action=login&cid="+encodeURIComponent(cid)+"&pid="+encodeURIComponent(pid));
+
+    out.innerHTML = "SEARCHING...";
+
+    var xhr = new XMLHttpRequest();
+    xhr.open("GET", API + "?trk=" + encodeURIComponent(trk.value), true);
+
+    xhr.onreadystatechange = function () {
+        if (xhr.readyState == 4) {
+            out.innerHTML = xhr.responseText || "NO DATA";
+        }
+    };
+
+    xhr.send(null);
 }
 </script>
 
