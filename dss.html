@@ -3,119 +3,77 @@
 <head>
 <meta charset="UTF-8">
 <title>DashGo POD</title>
-
 <style>
-body{
-    background:#cfd3d6;
-    font-family:Tahoma, Arial, sans-serif;
-    font-size:14px;
-    margin:0;
-    padding:8px;
+body {
+    background: #cfd3d6;
+    font-family: Tahoma, Arial, sans-serif;
+    font-size: 14px;
+    margin: 0;
+    padding: 8px;
 }
-
-.container{
-    max-width:320px;
-    margin:0 auto;
-    background:#e6e6e6;
-    border:2px solid #7a7a7a;
-    box-shadow:inset 0 0 0 2px #fff;
-    padding:10px;
+.container {
+    max-width: 320px;
+    margin: 0 auto;
+    background: #e6e6e6;
+    border: 2px solid #7a7a7a;
+    box-shadow: inset 0 0 0 2px #fff;
+    padding: 10px;
 }
-
-.header{
-    background:#2f4f6f;
-    color:#fff;
-    text-align:center;
-    font-weight:bold;
-    padding:6px;
-    border:1px solid #000;
+.header {
+    background: #2f4f6f;
+    color: #fff;
+    text-align: center;
+    font-weight: bold;
+    padding: 6px;
+    border: 1px solid #000;
 }
-
-hr{
-    border:0;
-    border-top:1px solid #7a7a7a;
-    margin:8px 0;
+hr {
+    border: 0;
+    border-top: 1px solid #7a7a7a;
+    margin: 8px 0;
 }
-
-label{
-    display:block;
-    margin-top:6px;
-    font-weight:bold;
+label {
+    display: block;
+    margin-top: 6px;
+    font-weight: bold;
 }
-
-input,select,button{
-    width:100%;
-    box-sizing:border-box;
-    font-size:14px;
-    padding:6px;
-    margin-top:4px;
-    border:2px solid #7a7a7a;
-    background:#fff;
+input, select, button {
+    width: 100%;
+    box-sizing: border-box;
+    font-size: 14px;
+    padding: 6px;
+    margin-top: 4px;
+    border: 2px solid #7a7a7a;
+    background: #fff;
 }
-
-input[readonly]{
-    background:#ddd;
-}
-
-button{
-    background:#d4d0c8;
-    font-weight:bold;
-    cursor:pointer;
-}
-
-button:active{
-    background:#bcbcbc;
-}
-
-.input-wrap{
-    display:flex;
-    gap:4px;
-}
-
-.scan-btn{
-    width:48px;
-    font-size:18px;
-}
-
-.hidden{display:none;}
-
-.msg{
-    margin-top:6px;
-    font-size:13px;
-    font-weight:bold;
-}
+input[readonly] { background: #ddd; }
+button { background: #d4d0c8; font-weight: bold; cursor: pointer; }
+button:active { background: #bcbcbc; }
+.input-wrap { display: flex; gap: 4px; }
+.scan-btn { width: 48px; font-size: 18px; }
+.hidden { display: none; }
+.msg { margin-top: 6px; font-size: 13px; font-weight: bold; }
 </style>
 </head>
-
 <body>
-
 <div class="container">
-
-<div class="header">DashGo POD</div>
-
-<hr>
-
-<div id="loginBox">
+  <div class="header">DashGo POD</div>
+  <hr>
+  
+  <div id="loginBox">
     <label>CID</label>
     <input type="text" id="cid">
-
     <label>PID</label>
     <input type="text" id="pid">
-
     <button onclick="logon()">LOGON</button>
     <div id="loginMsg" class="msg"></div>
-</div>
+  </div>
 
-<div id="pickupBox" class="hidden">
-
+  <div id="pickupBox" class="hidden">
     <label>Tracking ID</label>
     <div class="input-wrap">
-        <input type="text" id="trk"
-               placeholder="Tap to scan"
-               onclick="scanBarcode()"
-               onfocus="scanBarcode()"
-               autocomplete="off">
-        <button class="scan-btn" onclick="scanBarcode()">📷</button>
+      <input type="text" id="trk" placeholder="Tap to scan" onclick="scanBarcode()" autocomplete="off">
+      <button class="scan-btn" onclick="scanBarcode()">📷</button>
     </div>
 
     <label>Date / Time</label>
@@ -126,27 +84,25 @@ button:active{
 
     <label>Status</label>
     <select id="status" onchange="checkInitialsField()">
-        <option>ITEM DATA RECEIVED</option>
-        <option>ITEM HANDED TO COURIER</option>
-        <option>ITEM SCANNED AT HUB</option>
-        <option>ITEM IN TRANSIT</option>
-        <option>ITEM OUT FOR DELIVERY</option>
-        <option>ITEM DELIVERED</option>
+      <option>ITEM DATA RECEIVED</option>
+      <option>ITEM HANDED TO COURIER</option>
+      <option>ITEM SCANNED AT HUB</option>
+      <option>ITEM IN TRANSIT</option>
+      <option>ITEM OUT FOR DELIVERY</option>
+      <option>ITEM DELIVERED</option>
     </select>
 
     <div id="initBox" class="hidden">
-        <label>Recipient Initials</label>
-        <input type="text" id="initials" maxlength="4">
+      <label>Recipient Initials</label>
+      <input type="text" id="initials" maxlength="4">
     </div>
 
     <button onclick="submitPickup()">CONFIRM</button>
     <div id="pickupMsg" class="msg"></div>
-
+  </div>
 </div>
 
-</div>
-
-<!-- 🔊 BEEP -->
+<!-- beep sound -->
 <audio id="beep">
 <source src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA=" type="audio/wav">
 </audio>
@@ -155,7 +111,7 @@ button:active{
 var CID="", PID="";
 var URL="https://script.google.com/macros/s/AKfycbzgBEwDq1Hwl1weE2YbjHgeHhv3GdELuVkRpGYwwrZ4VQo0V5KQtDLmnFSyIRpr5fwI/exec";
 
-// Safe references
+// element references
 var loginBox=document.getElementById("loginBox");
 var pickupBox=document.getElementById("pickupBox");
 var loginMsg=document.getElementById("loginMsg");
@@ -167,7 +123,7 @@ var initBox=document.getElementById("initBox");
 var initials=document.getElementById("initials");
 var pickupMsg=document.getElementById("pickupMsg");
 
-// ZXing scan (fixed return URL)
+// scan via ZXing intent
 function scanBarcode(){
     var base = document.location.href.split("?")[0];
     var ret = encodeURIComponent(base + "?SCAN_RESULT={CODE}");
@@ -179,44 +135,39 @@ function scanBarcode(){
         "end";
 }
 
-// Capture ZXing result and beep
+// capture ZXing result
 (function(){
-    var q=window.location.search;
-    if(q.indexOf("SCAN_RESULT=")>-1){
-        var code=decodeURIComponent(q.split("SCAN_RESULT=")[1].replace(/\+/g," "));
-        trk.value=code;
+    var q = window.location.search;
+    if(q.indexOf("SCAN_RESULT=") > -1){
+        var code = decodeURIComponent(q.split("SCAN_RESULT=")[1].replace(/\+/g," "));
+        trk.value = code;
         trk.blur();
 
         // beep
-        try{
-            var b=document.getElementById("beep");
-            b.currentTime=0;
-            b.play();
-        }catch(e){}
+        try { document.getElementById("beep").play(); } catch(e){}
 
         checkInitialsField();
         history.replaceState(null,null,document.location.href.split("?")[0]);
     }
 })();
 
-// Set current date/time
+// set datetime
 function dt(){
     var d=new Date();
-    dtField.value=
-        d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate()+" "+
-        d.getHours()+":"+d.getMinutes()+":"+d.getSeconds();
+    dtField.value = d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate()+" "+
+                    d.getHours()+":"+d.getMinutes()+":"+d.getSeconds();
 }
 
-// Logon function
+// logon
 function logon(){
     CID=cid.value.trim();
     PID=pid.value.trim();
-    if(!CID||!PID){alert("CID / PID REQUIRED");return;}
+    if(!CID||!PID){alert("CID / PID REQUIRED"); return;}
 
     var x=new XMLHttpRequest();
-    x.open("POST",URL,true);
+    x.open("POST", URL, true);
     x.setRequestHeader("Content-Type","application/x-www-form-urlencoded");
-    x.onreadystatechange=function(){
+    x.onreadystatechange = function(){
         if(x.readyState==4){
             if(x.responseText=="OK"){
                 loginBox.style.display="none";
@@ -230,7 +181,7 @@ function logon(){
     x.send("action=login&cid="+encodeURIComponent(CID)+"&pid="+encodeURIComponent(PID));
 }
 
-// Show/hide initials field
+// show/hide initials
 function checkInitialsField(){
     if(status.value==="ITEM DELIVERED"){
         initBox.style.display="block";
@@ -240,18 +191,16 @@ function checkInitialsField(){
     }
 }
 
-// Submit pickup
+// submit pickup
 function submitPickup(){
     dt();
-    if(!trk.value.trim()){alert("SCAN REQUIRED");return;}
+    if(!trk.value.trim()){alert("SCAN REQUIRED"); return;}
 
-    var x=new XMLHttpRequest();
-    x.open("POST",URL,true);
+    var x = new XMLHttpRequest();
+    x.open("POST", URL, true);
     x.setRequestHeader("Content-Type","application/x-www-form-urlencoded");
-    x.onreadystatechange=function(){
-        if(x.readyState==4){
-            pickupMsg.innerHTML=x.responseText;
-        }
+    x.onreadystatechange = function(){
+        if(x.readyState==4){ pickupMsg.innerHTML = x.responseText; }
     };
 
     x.send(
@@ -266,6 +215,5 @@ function submitPickup(){
     );
 }
 </script>
-
 </body>
 </html>
