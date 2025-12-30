@@ -152,15 +152,25 @@ button:active{
 </audio>
 
 <script>
-var CID="",PID="";
+var CID="", PID="";
 var URL="https://script.google.com/macros/s/AKfycbzgBEwDq1Hwl1weE2YbjHgeHhv3GdELuVkRpGYwwrZ4VQo0V5KQtDLmnFSyIRpr5fwI/exec";
 
+// Safe references
+var loginBox=document.getElementById("loginBox");
+var pickupBox=document.getElementById("pickupBox");
+var loginMsg=document.getElementById("loginMsg");
+var trk=document.getElementById("trk");
+var dtField=document.getElementById("dt");
+var loc=document.getElementById("loc");
+var status=document.getElementById("status");
+var initBox=document.getElementById("initBox");
+var initials=document.getElementById("initials");
+var pickupMsg=document.getElementById("pickupMsg");
+
+// ZXing scan (fixed return URL)
 function scanBarcode(){
-    var ret = encodeURIComponent(
-        window.location.origin +
-        window.location.pathname +
-        "?SCAN_RESULT={CODE}"
-    );
+    var base = document.location.href.split("?")[0];
+    var ret = encodeURIComponent(base + "?SCAN_RESULT={CODE}");
     window.location.href =
         "intent://scan/#Intent;" +
         "scheme=zxing;" +
@@ -169,13 +179,15 @@ function scanBarcode(){
         "end";
 }
 
+// Capture ZXing result and beep
 (function(){
     var q=window.location.search;
     if(q.indexOf("SCAN_RESULT=")>-1){
         var code=decodeURIComponent(q.split("SCAN_RESULT=")[1].replace(/\+/g," "));
-        document.getElementById("trk").value=code;
-        document.getElementById("trk").blur();
+        trk.value=code;
+        trk.blur();
 
+        // beep
         try{
             var b=document.getElementById("beep");
             b.currentTime=0;
@@ -183,17 +195,19 @@ function scanBarcode(){
         }catch(e){}
 
         checkInitialsField();
-        history.replaceState(null,null,window.location.pathname);
+        history.replaceState(null,null,document.location.href.split("?")[0]);
     }
 })();
 
+// Set current date/time
 function dt(){
     var d=new Date();
-    document.getElementById("dt").value=
+    dtField.value=
         d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate()+" "+
         d.getHours()+":"+d.getMinutes()+":"+d.getSeconds();
 }
 
+// Logon function
 function logon(){
     CID=cid.value.trim();
     PID=pid.value.trim();
@@ -216,6 +230,7 @@ function logon(){
     x.send("action=login&cid="+encodeURIComponent(CID)+"&pid="+encodeURIComponent(PID));
 }
 
+// Show/hide initials field
 function checkInitialsField(){
     if(status.value==="ITEM DELIVERED"){
         initBox.style.display="block";
@@ -225,6 +240,7 @@ function checkInitialsField(){
     }
 }
 
+// Submit pickup
 function submitPickup(){
     dt();
     if(!trk.value.trim()){alert("SCAN REQUIRED");return;}
@@ -243,7 +259,7 @@ function submitPickup(){
         "&cid="+encodeURIComponent(CID)+
         "&pid="+encodeURIComponent(PID)+
         "&trk="+encodeURIComponent(trk.value)+
-        "&dt="+encodeURIComponent(dt.value)+
+        "&dt="+encodeURIComponent(dtField.value)+
         "&loc="+encodeURIComponent(loc.value)+
         "&status="+encodeURIComponent(status.value)+
         "&initials="+encodeURIComponent(initials.value.toUpperCase())
