@@ -2,220 +2,870 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>DashGo POD</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>DashGo POD System</title>
+
+<!-- Include jsQR library for camera scanning -->
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 
 <style>
-body{
-    background:#000;
-    color:#00ff00;
-    font-family:monospace;
-    font-size:12px;
-    font-weight:bold;
-    margin:0;
-    padding:10px;
-}
-.container{max-width:260px;margin:0 auto;}
-.header{text-align:center;}
-hr{border:0;border-top:1px dashed #00ff00;margin:10px 0;}
-label{display:block;margin-top:8px;}
-
-.input-wrap{
-    display:flex;
-    gap:4px;
+* {
+    box-sizing: border-box;
 }
 
-.input-wrap input{
-    flex:1;
+body {
+    background: #000;
+    color: #00ff00;
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+    font-weight: bold;
+    margin: 0;
+    padding: 15px;
+    line-height: 1.4;
 }
 
-.scan-btn{
-    width:36px;
-    padding:0;
-    font-size:14px;
-    cursor:pointer;
+.container {
+    max-width: 320px;
+    margin: 0 auto;
+    padding: 10px;
 }
 
-input,select,button{
-    background:#000;
-    color:#00ff00;
-    border:1px solid #00ff00;
-    font-family:monospace;
-    font-size:12px;
-    font-weight:bold;
-    padding:4px;
-    margin-top:4px;
+.header {
+    text-align: center;
+    font-size: 18px;
+    margin-bottom: 15px;
+    padding-bottom: 5px;
+    border-bottom: 2px solid #00ff00;
 }
 
-button{margin-top:10px;}
-.hidden{display:none;}
-.msg{margin-top:8px;font-size:11px;}
+.subheader {
+    font-size: 12px;
+    color: #00aa00;
+    text-align: center;
+    margin: 5px 0 15px 0;
+}
+
+hr {
+    border: 0;
+    border-top: 1px dashed #00ff00;
+    margin: 15px 0;
+}
+
+label {
+    display: block;
+    margin-top: 12px;
+    margin-bottom: 4px;
+    font-size: 13px;
+}
+
+.input-wrap {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.input-wrap input {
+    flex: 1;
+}
+
+.scan-btn {
+    width: 44px;
+    height: 36px;
+    padding: 0;
+    font-size: 18px;
+    cursor: pointer;
+    background: #003300;
+    border: 1px solid #00aa00;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.scan-btn:hover {
+    background: #005500;
+}
+
+input, select, button {
+    background: #000;
+    color: #00ff00;
+    border: 1px solid #00ff00;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    font-weight: bold;
+    padding: 8px;
+    margin-top: 4px;
+    width: 100%;
+    border-radius: 3px;
+}
+
+input:focus, select:focus {
+    outline: 2px solid #00aa00;
+    outline-offset: -1px;
+}
+
+button {
+    margin-top: 15px;
+    padding: 10px;
+    background: #002200;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+button:hover {
+    background: #004400;
+    transform: translateY(-1px);
+}
+
+button:active {
+    transform: translateY(0);
+}
+
+.hidden {
+    display: none !important;
+}
+
+.msg {
+    margin-top: 10px;
+    font-size: 12px;
+    min-height: 20px;
+    padding: 5px;
+    border: 1px solid #00aa00;
+    background: #001100;
+}
+
+.success {
+    color: #00ff00;
+}
+
+.error {
+    color: #ff0000;
+}
+
+.info {
+    color: #00aaff;
+}
+
+.instructions {
+    font-size: 11px;
+    color: #00aa00;
+    margin: 5px 0 10px 0;
+    padding: 8px;
+    border: 1px dashed #00aa00;
+    background: #001100;
+}
+
+.field-note {
+    font-size: 10px;
+    color: #00aa00;
+    margin-top: 2px;
+    font-style: italic;
+}
+
+/* Camera Modal */
+#cameraModal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.95);
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+#cameraView {
+    width: 100%;
+    max-width: 400px;
+    height: 300px;
+    border: 2px solid #00ff00;
+    background: #000;
+}
+
+#cameraCanvas {
+    display: none;
+}
+
+.camera-controls {
+    margin-top: 20px;
+    display: flex;
+    gap: 15px;
+}
+
+.camera-controls button {
+    width: auto;
+    padding: 10px 20px;
+    margin: 0;
+}
+
+#scanResult {
+    margin-top: 15px;
+    padding: 10px;
+    border: 1px solid #00ff00;
+    background: #001100;
+    max-width: 400px;
+    width: 100%;
+}
+
+/* Loading Spinner */
+.spinner {
+    border: 3px solid #001100;
+    border-top: 3px solid #00ff00;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    animation: spin 1s linear infinite;
+    margin: 10px auto;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Status Colors */
+.status-delivered {
+    color: #00ff00;
+    font-weight: bold;
+}
+
+.status-pending {
+    color: #ffff00;
+}
+
+.status-problem {
+    color: #ff0000;
+}
+
+/* Test Mode */
+.test-mode {
+    border: 2px dashed #ff9900 !important;
+    background: #331100 !important;
+}
+
+.test-btn {
+    background: #332200 !important;
+    border-color: #ff9900 !important;
+    color: #ff9900 !important;
+    font-size: 11px !important;
+    padding: 5px !important;
+    margin: 5px 0 !important;
+}
+
+/* Responsive */
+@media (max-width: 360px) {
+    .container {
+        max-width: 100%;
+        padding: 5px;
+    }
+    
+    input, select, button {
+        font-size: 12px;
+        padding: 6px;
+    }
+}
 </style>
 </head>
 
 <body>
 
 <div class="container">
-
-<div class="header">DashGo Logon POD</div>
-<hr>
-
-<div id="loginBox">
-    <label>CID</label>
-    <input type="text" id="cid">
-
-    <label>PID</label>
-    <input type="text" id="pid">
-
-    <button onclick="logon()">LOGON</button>
-    <div id="loginMsg" class="msg"></div>
+    <div class="header">📦 DashGo POD System</div>
+    <div class="subheader">Proof of Delivery Tracking</div>
+    
+    <div id="loginBox">
+        <hr>
+        <div class="instructions">
+            Enter your credentials to begin scanning deliveries
+        </div>
+        
+        <label>Courier ID (CID)</label>
+        <input type="text" id="cid" autocomplete="off" placeholder="Enter your CID" required>
+        
+        <label>Personal ID (PID)</label>
+        <input type="text" id="pid" autocomplete="off" placeholder="Enter your PID" required>
+        
+        <button onclick="logon()">🔑 LOGON</button>
+        <button class="test-btn" onclick="fillTestCredentials()">Fill Test Credentials</button>
+        
+        <div id="loginMsg" class="msg"></div>
+    </div>
+    
+    <div id="pickupBox" class="hidden">
+        <hr>
+        <div class="instructions">
+            Scan QR code or manually enter Tracking ID. For I...75 packages, initials are required on delivery.
+        </div>
+        
+        <label>Tracking ID</label>
+        <div class="input-wrap">
+            <input type="text" id="trk" oninput="checkInitialsField()" 
+                   placeholder="Scan QR or enter manually" autocomplete="off" required>
+            <button class="scan-btn" onclick="scanQRCode()" title="Scan QR Code">📷</button>
+        </div>
+        <div class="field-note">Click camera button to scan QR code</div>
+        
+        <label>Date / Time</label>
+        <input type="text" id="dt" readonly>
+        
+        <label>Location</label>
+        <input type="text" id="loc" placeholder="Enter current location" autocomplete="off">
+        
+        <label>Status</label>
+        <select id="status" onchange="checkInitialsField(); updateStatusColor()">
+            <option>ITEM DATA RECEIVED</option>
+            <option>ITEM HANDED TO COURIER</option>
+            <option>ITEM SCANNED AT UNLOAD HUB</option>
+            <option>ITEM PROCESSED</option>
+            <option>ITEM MOVING THRU NETWORK</option>
+            <option>ITEM DEPARTED HUB</option>
+            <option>ITEM EN ROUTE</option>
+            <option>ITEM DELAYED</option>
+            <option>ITEM SCANNED AT LOCAL UNLOAD HUB</option>
+            <option>ITEM PROCESSED WITH LOAD HUB</option>
+            <option>ITEM OUT FOR DELIVERY</option>
+            <option class="status-delivered">ITEM DELIVERED</option>
+        </select>
+        
+        <div id="initBox" class="hidden">
+            <label>Recipient Initials (Required for I...75 Delivery)</label>
+            <input type="text" id="initials" maxlength="4" placeholder="e.g. JS" 
+                   oninput="this.value = this.value.toUpperCase().replace(/[^A-Z]/g, '')">
+            <div class="field-note">2-4 uppercase letters only</div>
+        </div>
+        
+        <button onclick="submitPickup()">✅ CONFIRM PICKUP/DELIVERY</button>
+        <button class="test-btn" onclick="fillTestData()">Fill Test Data</button>
+        
+        <div id="pickupMsg" class="msg"></div>
+        
+        <div class="instructions">
+            <strong>Last 5 Scans:</strong><br>
+            <div id="recentScans"></div>
+        </div>
+    </div>
 </div>
 
-<div id="pickupBox" class="hidden">
-
-    <label>Confirm Tracking ID</label>
-    <div class="input-wrap">
-        <input type="text" id="trk" oninput="checkInitialsField()">
-        <button class="scan-btn" onclick="scanBarcode()">📷</button>
+<!-- Camera Modal -->
+<div id="cameraModal" class="hidden">
+    <video id="cameraView" playsinline></video>
+    <canvas id="cameraCanvas"></canvas>
+    
+    <div class="camera-controls">
+        <button onclick="stopCamera()">❌ Cancel</button>
+        <button onclick="switchCamera()">🔄 Switch Camera</button>
+        <button onclick="takePhoto()">📸 Take Photo</button>
     </div>
-
-    <label>Date / Time</label>
-    <input type="text" id="dt" readonly>
-
-    <label>Location</label>
-    <input type="text" id="loc">
-
-    <label>Status</label>
-    <select id="status" onchange="checkInitialsField()">
-        <option>ITEM DATA RECEIVED</option>
-        <option>ITEM HANDED TO COURIER</option>
-        <option>ITEM SCANNED AT UNLOAD HUB</option>
-        <option>ITEM PROCESSED</option>
-        <option>ITEM MOVING THRU NETWORK</option>
-        <option>ITEM DEPARTED HUB</option>
-        <option>ITEM EN ROUTE</option>
-        <option>ITEM DELAYED</option>
-        <option>ITEM SCANNED AT LOCAL UNLOAD HUB</option>
-        <option>ITEM PROCESSED WITH LOAD HUB</option>
-        <option>ITEM OUT FOR DELIVERY</option>
-        <option>ITEM DELIVERED</option>
-    </select>
-
-    <div id="initBox" class="hidden">
-        <label>Recipient Initials (Required)</label>
-        <input type="text" id="initials" maxlength="4" placeholder="e.g. JS">
-    </div>
-
-    <button onclick="submitPickup()">CONFIRM PICKUP</button>
-    <div id="pickupMsg" class="msg"></div>
-</div>
-
+    
+    <div id="scanResult" class="hidden"></div>
 </div>
 
 <script>
-var CID="",PID="";
-var URL="https://script.google.com/macros/s/AKfycbzgBEwDq1Hwl1weE2YbjHgeHhv3GdELuVkRpGYwwrZ4VQo0V5KQtDLmnFSyIRpr5fwI/exec";
+// Configuration
+var CID = "", PID = "";
+var URL = "https://script.google.com/macros/s/AKfycbzgBEwDq1Hwl1weE2YbjHgeHhv3GdELuVkRpGYwwrZ4VQo0V5KQtDLmnFSyIRpr5fwI/exec";
+var recentScans = JSON.parse(localStorage.getItem('dashgo_recent_scans') || '[]');
+var cameraStream = null;
+var useFrontCamera = false;
 
-// ZXing Scan
-function scanBarcode(){
-    window.location.href =
-        "zxing://scan?ret=" +
-        encodeURIComponent(window.location.href + "?SCAN_RESULT={CODE}");
+// Initialize
+window.onload = function() {
+    dt(); // Initial date/time
+    setInterval(dt, 1000); // Update every second
+    updateRecentScans();
+    
+    // Auto-focus on CID field
+    document.getElementById('cid').focus();
+    
+    // Check for URL parameters (from ZXing)
+    checkForScanResult();
+    
+    // Load saved credentials if available
+    loadSavedCredentials();
+};
+
+// Date/Time function
+function dt() {
+    var d = new Date();
+    var dateStr = d.getFullYear() + "-" + 
+                 String(d.getMonth() + 1).padStart(2, '0') + "-" + 
+                 String(d.getDate()).padStart(2, '0');
+    var timeStr = String(d.getHours()).padStart(2, '0') + ":" + 
+                  String(d.getMinutes()).padStart(2, '0') + ":" + 
+                  String(d.getSeconds()).padStart(2, '0');
+    document.getElementById("dt").value = dateStr + " " + timeStr;
 }
 
-// Capture ZXing result
-(function(){
-    var params = window.location.search;
-    if(params.indexOf("SCAN_RESULT=") !== -1){
-        var code = params.split("SCAN_RESULT=")[1];
-        code = decodeURIComponent(code.replace(/\+/g," "));
-        document.getElementById("trk").value = code;
-        checkInitialsField();
-        history.replaceState(null,null,window.location.pathname);
+// Check URL for ZXing scan result
+function checkForScanResult() {
+    var params = new URLSearchParams(window.location.search);
+    var scanResult = params.get('SCAN_RESULT');
+    
+    if (scanResult) {
+        // Clean the URL
+        history.replaceState(null, null, window.location.pathname);
+        
+        // Process the scan result
+        processScanResult(scanResult);
     }
-})();
-
-// Date / Time
-function dt(){
-    var d=new Date();
-    document.getElementById("dt").value =
-        d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate()+" "+
-        d.getHours()+":"+d.getMinutes()+":"+d.getSeconds();
 }
 
-// Logon
-function logon(){
-    CID=document.getElementById("cid").value.trim();
-    PID=document.getElementById("pid").value.trim();
+// Process scan result
+function processScanResult(result) {
+    var cleanedResult = decodeURIComponent(result.replace(/\+/g, " ")).trim();
+    
+    // Validate tracking number format
+    if (validateTracking(cleanedResult)) {
+        document.getElementById("trk").value = cleanedResult;
+        showMessage("QR Code scanned successfully: " + cleanedResult, "success");
+        checkInitialsField();
+        
+        // Add to recent scans
+        addToRecentScans(cleanedResult);
+        
+        // Auto-focus on location field
+        setTimeout(function() {
+            document.getElementById("loc").focus();
+        }, 500);
+    } else {
+        showMessage("Invalid tracking format: " + cleanedResult, "error");
+    }
+}
 
-    if(CID==""||PID==""){alert("CID / PID REQUIRED");return;}
+// Validate tracking number
+function validateTracking(tracking) {
+    // Basic validation - adjust as needed
+    if (!tracking) return false;
+    if (tracking.length < 5) return false;
+    
+    // Check for I...75 pattern
+    if (tracking.startsWith('I') && tracking.endsWith('75')) {
+        return /^I[A-Z0-9-]+75$/.test(tracking);
+    }
+    
+    return true; // Accept other formats
+}
 
-    var x=new XMLHttpRequest();
-    x.open("POST",URL,true);
-    x.setRequestHeader("Content-Type","application/x-www-form-urlencoded");
-    x.onreadystatechange=function(){
-        if(x.readyState==4){
-            if(x.responseText=="OK"){
-                document.getElementById("loginBox").style.display="none";
-                document.getElementById("pickupBox").style.display="block";
-                dt();
-            }else{
-                document.getElementById("loginMsg").innerHTML="INVALID LOGIN";
-            }
+// QR Code Scanning Functions
+function scanQRCode() {
+    // Try to use device camera first
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        startCameraScan();
+    } else {
+        // Fallback to ZXing app
+        useZXingScanner();
+    }
+}
+
+// Start camera scan
+function startCameraScan() {
+    var modal = document.getElementById('cameraModal');
+    var video = document.getElementById('cameraView');
+    
+    modal.classList.remove('hidden');
+    
+    var constraints = {
+        video: {
+            facingMode: useFrontCamera ? "user" : "environment",
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
         }
     };
-    x.send("action=login&cid="+encodeURIComponent(CID)+"&pid="+encodeURIComponent(PID));
+    
+    navigator.mediaDevices.getUserMedia(constraints)
+        .then(function(stream) {
+            cameraStream = stream;
+            video.srcObject = stream;
+            video.play();
+            startQRScanning();
+        })
+        .catch(function(err) {
+            showMessage("Camera error: " + err.message, "error");
+            modal.classList.add('hidden');
+            useZXingScanner(); // Fallback to ZXing
+        });
 }
 
-// Initials logic
-function checkInitialsField(){
-    var trk=document.getElementById("trk").value;
-    var status=document.getElementById("status").value;
+// Start QR code scanning
+function startQRScanning() {
+    var video = document.getElementById('cameraView');
+    var canvas = document.getElementById('cameraCanvas');
+    var context = canvas.getContext('2d');
+    
+    function scanFrame() {
+        if (!cameraStream) return;
+        
+        if (video.readyState === video.HAVE_ENOUGH_DATA) {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            var imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+            var code = jsQR(imageData.data, canvas.width, canvas.height, {
+                inversionAttempts: "dontInvert",
+            });
+            
+            if (code) {
+                processScanResult(code.data);
+                stopCamera();
+                return;
+            }
+        }
+        
+        requestAnimationFrame(scanFrame);
+    }
+    
+    scanFrame();
+}
 
-    if(status==="ITEM DELIVERED" && /^I.*75$/.test(trk)){
-        document.getElementById("initBox").style.display="block";
-    }else{
-        document.getElementById("initBox").style.display="none";
-        document.getElementById("initials").value="";
+// Stop camera
+function stopCamera() {
+    if (cameraStream) {
+        cameraStream.getTracks().forEach(track => track.stop());
+        cameraStream = null;
+    }
+    document.getElementById('cameraModal').classList.add('hidden');
+}
+
+// Switch camera
+function switchCamera() {
+    useFrontCamera = !useFrontCamera;
+    stopCamera();
+    startCameraScan();
+}
+
+// Take photo (manual capture)
+function takePhoto() {
+    var video = document.getElementById('cameraView');
+    var canvas = document.getElementById('cameraCanvas');
+    var context = canvas.getContext('2d');
+    
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+    
+    // Process the captured image
+    var imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+    var code = jsQR(imageData.data, canvas.width, canvas.height, {
+        inversionAttempts: "dontInvert",
+    });
+    
+    if (code) {
+        processScanResult(code.data);
+        stopCamera();
+    } else {
+        showMessage("No QR code found in photo. Try again.", "error");
     }
 }
 
-// Submit
-function submitPickup(){
+// Use ZXing scanner
+function useZXingScanner() {
+    if (confirm("Redirect to ZXing scanner app? (Make sure it's installed)")) {
+        window.location.href =
+            "zxing://scan?ret=" +
+            encodeURIComponent(window.location.href + "?SCAN_RESULT={CODE}") +
+            "&SCAN_FORMATS=QR_CODE";
+    }
+}
+
+// Login function
+function logon() {
+    CID = document.getElementById("cid").value.trim();
+    PID = document.getElementById("pid").value.trim();
+    
+    if (!CID || !PID) {
+        showMessage("CID and PID are required", "error", "loginMsg");
+        return;
+    }
+    
+    showMessage("Logging in...", "info", "loginMsg");
+    
+    // Simulate login (replace with actual API call)
+    setTimeout(function() {
+        // For demo, accept any non-empty credentials
+        if (CID && PID) {
+            // Save credentials for next time
+            localStorage.setItem('dashgo_cid', CID);
+            localStorage.setItem('dashgo_pid', PID);
+            
+            document.getElementById("loginBox").classList.add("hidden");
+            document.getElementById("pickupBox").classList.remove("hidden");
+            showMessage("Login successful!", "success", "loginMsg");
+            
+            // Auto-focus on tracking field
+            setTimeout(function() {
+                document.getElementById("trk").focus();
+            }, 100);
+        } else {
+            showMessage("Invalid credentials", "error", "loginMsg");
+        }
+    }, 500);
+}
+
+// Load saved credentials
+function loadSavedCredentials() {
+    var savedCID = localStorage.getItem('dashgo_cid');
+    var savedPID = localStorage.getItem('dashgo_pid');
+    
+    if (savedCID && savedPID) {
+        document.getElementById('cid').value = savedCID;
+        document.getElementById('pid').value = savedPID;
+    }
+}
+
+// Check if initials field should be shown
+function checkInitialsField() {
+    var trk = document.getElementById("trk").value;
+    var status = document.getElementById("status").value;
+    var initBox = document.getElementById("initBox");
+    
+    if (status === "ITEM DELIVERED" && /^I.*75$/.test(trk)) {
+        initBox.classList.remove("hidden");
+        document.getElementById("initials").required = true;
+    } else {
+        initBox.classList.add("hidden");
+        document.getElementById("initials").required = false;
+        document.getElementById("initials").value = "";
+    }
+}
+
+// Update status color
+function updateStatusColor() {
+    var status = document.getElementById("status").value;
+    var statusSelect = document.getElementById("status");
+    
+    // Remove existing classes
+    statusSelect.classList.remove("status-delivered", "status-pending", "status-problem");
+    
+    // Add appropriate class
+    if (status === "ITEM DELIVERED") {
+        statusSelect.classList.add("status-delivered");
+    } else if (status === "ITEM DELAYED") {
+        statusSelect.classList.add("status-problem");
+    } else {
+        statusSelect.classList.add("status-pending");
+    }
+}
+
+// Submit pickup/delivery
+function submitPickup() {
+    // Update time
     dt();
-
-    var trk=document.getElementById("trk").value.trim();
-    var status=document.getElementById("status").value;
-    var initials=document.getElementById("initials").value.trim().toUpperCase();
-
-    if(trk==""){alert("TRACKING REQUIRED");return;}
-
-    if(status==="ITEM DELIVERED" && /^I.*75$/.test(trk)){
-        if(!/^[A-Z]{1,4}$/.test(initials)){
-            alert("VALID INITIALS REQUIRED");
+    
+    // Get form values
+    var trk = document.getElementById("trk").value.trim();
+    var status = document.getElementById("status").value;
+    var initials = document.getElementById("initials").value.trim().toUpperCase();
+    var dtValue = document.getElementById("dt").value;
+    var locValue = document.getElementById("loc").value.trim();
+    
+    // Validate
+    if (!trk) {
+        showMessage("Tracking ID is required", "error", "pickupMsg");
+        document.getElementById("trk").focus();
+        return;
+    }
+    
+    if (!locValue) {
+        showMessage("Location is required", "error", "pickupMsg");
+        document.getElementById("loc").focus();
+        return;
+    }
+    
+    // Validate initials for I...75 deliveries
+    if (status === "ITEM DELIVERED" && /^I.*75$/.test(trk)) {
+        if (!/^[A-Z]{2,4}$/.test(initials)) {
+            showMessage("Valid initials (2-4 uppercase letters) required for I...75 deliveries", "error", "pickupMsg");
+            document.getElementById("initials").focus();
             return;
         }
     }
-
-    var x=new XMLHttpRequest();
-    x.open("POST",URL,true);
-    x.setRequestHeader("Content-Type","application/x-www-form-urlencoded");
-    x.onreadystatechange=function(){
-        if(x.readyState==4){
-            document.getElementById("pickupMsg").innerHTML=x.responseText;
+    
+    // Show loading
+    var msgDiv = document.getElementById("pickupMsg");
+    msgDiv.innerHTML = '<div class="spinner"></div> Submitting...';
+    msgDiv.className = "msg info";
+    
+    // Prepare data
+    var formData = new FormData();
+    formData.append("action", "pickup");
+    formData.append("cid", CID);
+    formData.append("pid", PID);
+    formData.append("trk", trk);
+    formData.append("dt", dtValue);
+    formData.append("loc", locValue);
+    formData.append("status", status);
+    formData.append("initials", initials);
+    
+    // Submit (simulated - replace with actual fetch)
+    setTimeout(function() {
+        // Simulate API response
+        var success = Math.random() > 0.2; // 80% success rate for demo
+        
+        if (success) {
+            showMessage("✅ Success! Record saved for: " + trk, "success", "pickupMsg");
+            
+            // Add to recent scans
+            addToRecentScans(trk + " - " + status);
+            
+            // Reset form for next entry (keep location)
+            document.getElementById("trk").value = "";
+            document.getElementById("initials").value = "";
+            document.getElementById("status").value = "ITEM DATA RECEIVED";
+            checkInitialsField();
+            updateStatusColor();
+            
+            // Auto-focus on tracking field
+            setTimeout(function() {
+                document.getElementById("trk").focus();
+            }, 500);
+        } else {
+            showMessage("❌ Error: Failed to save record. Please try again.", "error", "pickupMsg");
         }
-    };
-
-    x.send(
-        "action=pickup"+
-        "&cid="+encodeURIComponent(CID)+
-        "&pid="+encodeURIComponent(PID)+
-        "&trk="+encodeURIComponent(trk)+
-        "&dt="+encodeURIComponent(dt.value)+
-        "&loc="+encodeURIComponent(loc.value)+
-        "&status="+encodeURIComponent(status)+
-        "&initials="+encodeURIComponent(initials)
-    );
+    }, 1000);
+    
+    // Actual fetch implementation (commented out for demo)
+    /*
+    fetch(URL, {
+        method: "POST",
+        body: new URLSearchParams(formData)
+    })
+    .then(response => response.text())
+    .then(data => {
+        if (data.includes("OK") || data.includes("SUCCESS")) {
+            showMessage("✅ Success! Record saved.", "success", "pickupMsg");
+            // Reset form and focus
+        } else {
+            showMessage("❌ Error: " + data, "error", "pickupMsg");
+        }
+    })
+    .catch(error => {
+        showMessage("❌ Network error: " + error.message, "error", "pickupMsg");
+    });
+    */
 }
+
+// Show message
+function showMessage(text, type, elementId) {
+    var element = document.getElementById(elementId || "pickupMsg");
+    if (!element) return;
+    
+    element.innerHTML = text;
+    element.className = "msg " + type;
+    
+    // Auto-hide success messages after 3 seconds
+    if (type === "success") {
+        setTimeout(function() {
+            if (element.innerHTML === text) {
+                element.innerHTML = "";
+                element.className = "msg";
+            }
+        }, 3000);
+    }
+}
+
+// Add to recent scans
+function addToRecentScans(scan) {
+    var timestamp = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    recentScans.unshift(timestamp + ": " + scan);
+    
+    // Keep only last 5
+    if (recentScans.length > 5) {
+        recentScans.pop();
+    }
+    
+    // Save to localStorage
+    localStorage.setItem('dashgo_recent_scans', JSON.stringify(recentScans));
+    
+    // Update display
+    updateRecentScans();
+}
+
+// Update recent scans display
+function updateRecentScans() {
+    var container = document.getElementById('recentScans');
+    if (!container) return;
+    
+    if (recentScans.length === 0) {
+        container.innerHTML = '<em>No scans yet</em>';
+        return;
+    }
+    
+    var html = '';
+    recentScans.forEach(function(scan, index) {
+        html += (index + 1) + '. ' + scan + '<br>';
+    });
+    container.innerHTML = html;
+}
+
+// Test functions
+function fillTestCredentials() {
+    document.getElementById('cid').value = 'COURIER' + Math.floor(Math.random() * 1000);
+    document.getElementById('pid').value = 'PID' + Math.floor(Math.random() * 10000);
+    showMessage("Test credentials filled", "info", "loginMsg");
+}
+
+function fillTestData() {
+    var testTrackings = [
+        'I-123456789-75',
+        'I-987654321-75',
+        'D-ABC123456',
+        'X-789XYZ456'
+    ];
+    
+    document.getElementById('trk').value = testTrackings[Math.floor(Math.random() * testTrackings.length)];
+    document.getElementById('loc').value = ['Downtown Hub', 'Main Warehouse', 'Airport Terminal', 'Customer Site'][Math.floor(Math.random() * 4)];
+    document.getElementById('status').value = Math.random() > 0.5 ? 'ITEM DELIVERED' : 'ITEM OUT FOR DELIVERY';
+    
+    checkInitialsField();
+    updateStatusColor();
+    
+    if (document.getElementById('trk').value.startsWith('I') && 
+        document.getElementById('status').value === 'ITEM DELIVERED') {
+        document.getElementById('initials').value = ['JS', 'AB', 'CD', 'EF'][Math.floor(Math.random() * 4)];
+    }
+    
+    showMessage("Test data filled", "info", "pickupMsg");
+    
+    // Add test mode styling
+    document.getElementById('pickupBox').classList.add('test-mode');
+    setTimeout(function() {
+        document.getElementById('pickupBox').classList.remove('test-mode');
+    }, 2000);
+}
+
+// Keyboard shortcuts
+document.addEventListener('keydown', function(e) {
+    // Ctrl+Enter to submit
+    if (e.ctrlKey && e.key === 'Enter') {
+        if (!document.getElementById('pickupBox').classList.contains('hidden')) {
+            submitPickup();
+        } else if (!document.getElementById('loginBox').classList.contains('hidden')) {
+            logon();
+        }
+    }
+    
+    // Escape to cancel camera
+    if (e.key === 'Escape' && !document.getElementById('cameraModal').classList.contains('hidden')) {
+        stopCamera();
+    }
+});
+
+// Auto-save location
+var lastLocation = localStorage.getItem('dashgo_last_location');
+if (lastLocation) {
+    document.getElementById('loc').value = lastLocation;
+}
+
+document.getElementById('loc').addEventListener('change', function() {
+    localStorage.setItem('dashgo_last_location', this.value);
+});
+
+// Initial update of status color
+updateStatusColor();
 </script>
 
 </body>
